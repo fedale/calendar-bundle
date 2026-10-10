@@ -1,0 +1,18 @@
+{# One event, as a link when it has a url. Expects `item` (CalendarItem),
+   `locale`, `time_skeleton`; optional `show_time` (default true; `??`, not `|default`, which would turn false into true), `extra_class`
+   and `extra_style` (grid placement). #}
+{% set domain = 'CalendarBundle' %}
+{% set event = item.event %}
+{% set color = cal_color(event.style.color) %}
+{% set title = item.title ?? ('event.busy'|trans({}, domain, locale)) %}
+{% set tag = item.url ? 'a' : 'div' %}
+<{{ tag }}{% if item.url %} href="{{ item.url }}"{% endif %}
+    class="cal-event{{ item.allDay ? ' cal-event--all-day' : ' cal-event--timed' }}{{ item.busy ? ' cal-event--busy' }}{{ extra_class|default('') }}{{ event.style.cssClass ? ' ' ~ event.style.cssClass }}"
+    style="{{ color ? '--cal-event-color: ' ~ color ~ ';' }}{{ extra_style|default('') }}"
+    data-cal-event="{{ item.key }}"
+    title="{{ title }}">
+    {%- if (show_time ?? true) and not item.allDay -%}
+        <time class="cal-event__time" datetime="{{ item.start.format('c') }}">{{ cal_format(item.start, time_skeleton, locale) }}</time>
+    {%- endif -%}
+    <span class="cal-event__title">{{ title }}</span>
+</{{ tag }}>

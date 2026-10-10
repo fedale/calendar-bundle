@@ -1,0 +1,44 @@
+{# The calendar shell: toolbar + the active view. The view template receives
+   `model` (its view model), `calendar` (this component) and `locale`. #}
+{% set domain = 'CalendarBundle' %}
+{% set locale = this.context.locale %}
+{% set label = this.label %}
+{% set root_attributes = {class: 'cal cal--view-' ~ this.activeView} %}
+{% if label %}
+    {% set root_attributes = root_attributes|merge({'aria-label': label|trans({}, null, locale)}) %}
+{% endif %}
+<div {{ attributes.defaults(root_attributes) }} data-loading="addClass(cal--loading)">
+    <header class="cal-toolbar">
+        <div class="cal-toolbar__nav">
+            <button type="button" class="cal-btn cal-btn--icon"
+                    data-action="live#action" data-live-action-param="previous"
+                    aria-label="{{ 'toolbar.previous'|trans({}, domain, locale) }}"
+                    title="{{ 'toolbar.previous'|trans({}, domain, locale) }}">&lsaquo;</button>
+            <button type="button" class="cal-btn"
+                    data-action="live#action" data-live-action-param="today"
+                    {{ this.showingToday ? 'disabled' }}>{{ 'toolbar.today'|trans({}, domain, locale) }}</button>
+            <button type="button" class="cal-btn cal-btn--icon"
+                    data-action="live#action" data-live-action-param="next"
+                    aria-label="{{ 'toolbar.next'|trans({}, domain, locale) }}"
+                    title="{{ 'toolbar.next'|trans({}, domain, locale) }}">&rsaquo;</button>
+        </div>
+
+        <h2 class="cal-toolbar__title" aria-live="polite">{{ this.title }}</h2>
+
+        {% if this.options.enabledViews|length > 1 %}
+            <div class="cal-toolbar__views" role="group" aria-label="{{ 'toolbar.views'|trans({}, domain, locale) }}">
+                {% for name in this.options.enabledViews %}
+                    <button type="button" class="cal-btn"
+                            aria-pressed="{{ name == this.activeView ? 'true' : 'false' }}"
+                            data-action="live#action" data-live-action-param="changeView" data-live-view-param="{{ name }}">
+                        {{- ('view.' ~ name)|trans({}, domain, locale) -}}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </header>
+
+    <div class="cal-body">
+        {{ include(this.viewTemplate, {model: this.model, calendar: this, locale: locale}) }}
+    </div>
+</div>

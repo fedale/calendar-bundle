@@ -1,0 +1,24 @@
+toolbar:
+    previous: Precedente
+    next: Successivo
+    today: Oggi
+    views: Viste
+view:
+    month: Mese
+    week: Settimana
+    day: Giorno
+    year: Anno
+    list: Lista
+    timeline: Timeline
+    resources: Risorse
+event:
+    busy: Occupato
+month:
+    week: Settimana
+    more: '+%count% altri'
+    more_label: 'Mostra tutti gli eventi di %date%'
+list:
+    empty: Nessun evento in questo periodo.
+    all_day: Tutto il giorno
+    from: 'dalle %time%'
+    until: 'fino alle %time%'

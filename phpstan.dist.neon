@@ -1,0 +1,7 @@
+parameters:
+    level: 6
+    paths:
+        - src
+    # The bundle checks at runtime what application code hands it (e.g. the
+    # objects a source yields), whose types are only promised by PHPDoc.
+    treatPhpDocTypesAsCertain: false

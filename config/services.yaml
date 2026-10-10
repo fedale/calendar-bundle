@@ -1,0 +1,35 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Fedale\CalendarBundle\Definition\CalendarRegistry:
+        arguments:
+            $definitions: !tagged_locator { tag: 'fedale_calendar.calendar', index_by: 'id' }
+
+    Fedale\CalendarBundle\Source\SourceRegistry:
+        arguments:
+            $sources: !tagged_locator { tag: 'fedale_calendar.source', index_by: 'key' }
+
+    Fedale\CalendarBundle\View\ViewRegistry:
+        arguments:
+            $views: !tagged_locator { tag: 'fedale_calendar.view', index_by: 'name' }
+
+    Fedale\CalendarBundle\Options\CalendarOptionsResolver:
+        arguments:
+            $defaults: '%fedale_calendar.defaults%'
+            $calendarConfigs: '%fedale_calendar.calendars%'
+
+    Fedale\CalendarBundle\Source\EventCollector: ~
+    Fedale\CalendarBundle\Time\DateFormatter: ~
+
+    Fedale\CalendarBundle\Time\DefaultTimezoneResolver: ~
+    Fedale\CalendarBundle\Contract\TimezoneResolverInterface: '@Fedale\CalendarBundle\Time\DefaultTimezoneResolver'
+
+    # Built-in views; tagged through #[AsCalendarView].
+    Fedale\CalendarBundle\View\MonthView: ~
+    Fedale\CalendarBundle\View\ListView: ~
+
+    Fedale\CalendarBundle\Twig\CalendarExtension: ~
+    Fedale\CalendarBundle\Twig\Components\Calendar: ~

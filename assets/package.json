@@ -1,0 +1,10 @@
+{
+  "name": "@fedale/calendar-bundle",
+  "version": "0.1.0",
+  "symfony": {
+    "controllers": {},
+    "importmap": {
+      "@hotwired/stimulus": "^3.2.2"
+    }
+  }
+}

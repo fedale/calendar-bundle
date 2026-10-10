@@ -1,0 +1,37 @@
+{# List view: the days with events, each with its events in order. #}
+{% set domain = 'CalendarBundle' %}
+{% set time_skeleton = calendar.timeSkeleton %}
+{% if model.days is empty %}
+    <p class="cal-list__empty">{{ 'list.empty'|trans({}, domain, locale) }}</p>
+{% else %}
+    <div class="cal-list">
+        {% for day in model.days %}
+            <section class="cal-list__day{{ day.isToday ? ' cal-list__day--today' }}">
+                <h3 class="cal-list__date">
+                    <time datetime="{{ day.date.format('Y-m-d') }}"{{ day.isToday ? ' aria-current="date"' }}>{{ cal_format(day.date, 'EEEEdMMMMy', locale) }}</time>
+                </h3>
+                <ul class="cal-list__entries">
+                    {% for entry in day.entries %}
+                        {% set item = entry.item %}
+                        {% set start = cal_format(item.start, time_skeleton, locale) %}
+                        {% set end = cal_format(item.end, time_skeleton, locale) %}
+                        <li class="cal-list__entry cal-list__entry--{{ entry.kind.value }}">
+                            <span class="cal-list__time">
+                                {%- if entry.kind.value in ['all_day', 'continues'] -%}
+                                    {{ 'list.all_day'|trans({}, domain, locale) }}
+                                {%- elseif entry.kind.value == 'timed' -%}
+                                    {{ start }} – {{ end }}
+                                {%- elseif entry.kind.value == 'starts' -%}
+                                    {{ 'list.from'|trans({'%time%': start}, domain, locale) }}
+                                {%- else -%}
+                                    {{ 'list.until'|trans({'%time%': end}, domain, locale) }}
+                                {%- endif -%}
+                            </span>
+                            {{ include('@FedaleCalendar/view/_event.html.twig', {item: item, show_time: false}) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endfor %}
+    </div>
+{% endif %}

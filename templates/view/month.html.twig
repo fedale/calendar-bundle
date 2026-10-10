@@ -1,0 +1,72 @@
+{# Month view. Each week is a CSS grid: row 1 holds the day numbers, rows 2..
+   the event lanes, the last row the "+N more" buttons. Positions come from
+   the server as custom properties (--cal-start, --cal-span, --cal-row). #}
+{% set domain = 'CalendarBundle' %}
+{% set time_skeleton = calendar.timeSkeleton %}
+<div class="cal-month{{ model.weekNumbers ? ' cal-month--week-numbers' }}" style="--cal-cols: {{ model.weekdays|length }}">
+    <div class="cal-month__head">
+        {% if model.weekNumbers %}
+            <div class="cal-month__week-number" aria-hidden="true"></div>
+        {% endif %}
+        {% for day in model.weekdays %}
+            <div class="cal-month__weekday">
+                <abbr title="{{ cal_format(day, 'EEEE', locale) }}">{{ cal_format(day, 'EEE', locale) }}</abbr>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% for week in model.weeks %}
+        <div class="cal-month__week" style="--cal-more-row: {{ week.laneCount + 2 }}">
+            {% if model.weekNumbers %}
+                <div class="cal-month__week-number" title="{{ 'month.week'|trans({}, domain, locale) }} {{ week.number }}">{{ week.number }}</div>
+            {% endif %}
+            <div class="cal-month__row">
+                <div class="cal-month__cells" aria-hidden="true">
+                    {% for day in week.days %}
+                        <div class="cal-month__cell{{ not day.inMonth ? ' cal-month__cell--outside' }}{{ day.isToday ? ' cal-month__cell--today' }}{{ day.isWeekend ? ' cal-month__cell--weekend' }}" style="--cal-start: {{ day.column + 1 }}"></div>
+                    {% endfor %}
+                    {% for segment in week.backgrounds %}
+                        {% set color = cal_color(segment.item.event.style.color) %}
+                        <div class="cal-band{{ segment.item.event.style.cssClass ? ' ' ~ segment.item.event.style.cssClass }}"
+                             style="--cal-start: {{ segment.start + 1 }}; --cal-span: {{ segment.span }};{{ color ? ' --cal-event-color: ' ~ color ~ ';' }}"
+                             title="{{ segment.item.title }}"></div>
+                    {% endfor %}
+                </div>
+
+                <div class="cal-month__content">
+                    {% for day in week.days %}
+                        <div class="cal-month__date" style="--cal-start: {{ day.column + 1 }}">
+                            <time datetime="{{ day.date.format('Y-m-d') }}"{{ day.isToday ? ' aria-current="date"' }}>{{ cal_format(day.date, 'd', locale) }}</time>
+                        </div>
+                    {% endfor %}
+
+                    {% for segment in week.segments %}
+                        {{ include('@FedaleCalendar/view/_event.html.twig', {
+                            item: segment.item,
+                            show_time: not segment.continuesBefore,
+                            extra_class: (segment.continuesBefore ? ' cal-event--continues-before') ~ (segment.continuesAfter ? ' cal-event--continues-after') ~ (segment.span > 1 ? ' cal-event--bar'),
+                            extra_style: ' --cal-start: ' ~ (segment.start + 1) ~ '; --cal-span: ' ~ segment.span ~ '; --cal-row: ' ~ (segment.lane + 2) ~ ';',
+                        }) }}
+                    {% endfor %}
+
+                    {% for day in week.days|filter(day => day.overflowCount > 0) %}
+                        {% set popover_id = 'cal-' ~ calendar.calendar ~ '-more-' ~ day.date.format('Ymd') %}
+                        <button type="button" class="cal-month__more" style="--cal-start: {{ day.column + 1 }}"
+                                popovertarget="{{ popover_id }}"
+                                aria-label="{{ 'month.more_label'|trans({'%date%': cal_format(day.date, 'EEEEdMMMM', locale)}, domain, locale) }}">
+                            {{- 'month.more'|trans({'%count%': day.overflowCount}, domain, locale) -}}
+                        </button>
+                        <div class="cal-popover" id="{{ popover_id }}" popover>
+                            <h3 class="cal-popover__title">{{ cal_format(day.date, 'EEEEdMMMM', locale) }}</h3>
+                            <ul class="cal-popover__list">
+                                {% for item in day.items %}
+                                    <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item}) }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
