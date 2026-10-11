@@ -263,12 +263,20 @@ Come estensione futura è possibile un export iCal.
 
 ## 11. Fasi
 
-1. **Fondamenta**: definizioni di calendario, albero delle opzioni e precedenza (senza configuratore UI), contratto di lettura, registry delle fonti, guscio del LiveComponent, navigazione, viste mese e lista. **Verifica delle performance** prima di chiudere la fase (vedi sotto).
-2. **Griglia oraria**: viste giorno e settimana, `OverlapLayout`, riga "tutto il giorno", orari lavorativi. View model della griglia oraria.
-3. **Risorse**: colonne per risorsa (inclusa la combinazione giorni × risorse) e timeline (con i livelli di zoom), raggruppamento delle risorse.
+Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto il lavoro del mese (corsie, "+N altri", fasce di sfondo), mentre la griglia oraria richiede un algoritmo nuovo (colonne affiancate dentro lo stesso giorno). La vista a colonne per risorsa è una griglia oraria, quindi resta nella fase della griglia.
+
+1. **Fondamenta** (completata): definizioni di calendario, albero delle opzioni e precedenza (senza configuratore UI), contratto di lettura, registry delle fonti, guscio del LiveComponent, navigazione, viste mese e lista, verifica delle performance (vedi sotto).
+2. **Timeline e risorse** (completata):
+   - viste come **tipo + durata**, sul modello di FullCalendar: `timelineDay`, `timelineWeek` e `timelineMonth` sono varianti della stessa vista `timeline`; anche la lista diventa `listDay` / `listWeek` / `listMonth`, al posto di `display.list.range`. Formato scelto: `display.views.variants`, una mappa aperta `nome => ['type' => ..., parametri, 'label' => ...]`; ogni tipo valida i propri parametri (`validateVariant()`) e le varianti predefinite si possono modificare chiave per chiave;
+   - contratto delle risorse: `parentId` in `CalendarResource` per le risorse annidate, colonne dell'area risorse configurabili (`title` o un campo di `data`), raggruppamento per campo;
+   - **misura delle performance** con circa 50 risorse in calendar-demo, prima di fissare la struttura (componente unico, componenti figli per riga o paginazione delle risorse);
+   - vista timeline: corsie su un asse di tempo continuo, "+N altri" per riga, intestazioni su due livelli (per esempio settimana sopra, ore sotto), intestazioni fisse e scroll orizzontale in CSS;
+   - gruppi comprimibili e linea dell'ora corrente (posizione dal server, aggiornata ogni minuto da un controller Stimulus minimo). **Scostamento**: la compressione non è lato client ma una LiveProp (`collapsed`) con un'azione: lo stato sopravvive alla navigazione e ai re-render (un `<details>` o un controller verrebbero riportati allo stato del server dal morphing di LiveComponent) e le righe compresse non vengono nemmeno renderizzate;
+   - **toolbar configurabile** (`display.toolbar` con zone `start` / `center` / `end` e token, sul modello dei token di layout di gridview) e **pulsanti personalizzati** con azione URL (anche in Turbo Frame o modale), evento DOM o LiveAction.
+3. **Griglia oraria**: viste giorno e settimana, `OverlapLayout`, riga "tutto il giorno", orari lavorativi, colonne per risorsa (inclusa la combinazione giorni × risorse). View model della griglia oraria.
 4. **Interazione**: selezione, spostamento, ridimensionamento, intenti, gestione dei rifiuti e dei conflitti.
 5. **Completamento**: vista anno con densità, configuratore UI (dipende dal nucleo di setting-bundle), temi, accessibilità, i18n.
-6. **Extra**: bridge API Platform e applicazione demo con i tre domini di esempio.
+6. **Extra**: bridge API Platform. L'applicazione demo esiste già (calendar-demo) e cresce insieme alle fasi.
 
 ## 12. Da approfondire durante le fasi
 
@@ -284,9 +292,17 @@ Come estensione futura è possibile un export iCal.
 
   **Decisione: il calendario resta un unico LiveComponent** per mese e lista. Il costo cresce in modo lineare e i componenti figli non servono. Prima delle misure i tempi erano circa il doppio: sono stati eliminati il ricalcolo delle date nel comparatore e nel layout, e la creazione di un `IntlDateFormatter` per ogni data formattata. Restano due osservazioni:
   - con molti eventi per giorno, il peso dell'HTML viene quasi tutto dai popover "+N altri", che ripetono ogni evento del giorno (nello stress, 591 voci su 681 elementi). Se diventa un problema, il contenuto del popover può essere caricato al momento dell'apertura;
-  - la timeline con molte risorse (per esempio 50 risorse × 1 mese) va misurata all'inizio della fase 3, prima di fissarne la struttura: lì potrebbero servire componenti figli per riga o la paginazione delle risorse.
+  - la timeline con molte risorse è stata misurata nella fase 2 (stesse condizioni):
+
+    | Caso | Pagina | Navigazione Live | HTML |
+    |---|---|---|---|
+    | 14 sale, giorno / settimana / mese | 15 / 22 / 48 ms | 13 / 20 / 44 ms | 85 / 124 / 269 KB |
+    | 50 sale, giorno / settimana | 20 / 41 ms | 16 / 38 ms | 136 / 271 KB |
+    | 50 sale, mese (~1800 eventi) | 126 ms | 119 ms | 774 KB |
+
+    **Decisione: anche la timeline resta un unico LiveComponent**, senza componenti figli per riga. Il punto debole è il peso della navigazione Live nel caso più grande (tutto l'HTML a ogni passo, ~710 KB non compressi). Se servirà, le leve sono la paginazione delle risorse o un rendering parziale per riga; oltre il centinaio di risorse va rimisurato.
 - **View model**: definiti vista per vista, nella fase in cui la vista viene implementata.
-- **Combinazione giorni × risorse e zoom della timeline**: nella fase 3.
+- **Zoom della timeline**: nella fase 2. **Combinazione giorni × risorse** nelle colonne per risorsa: nella fase 3.
 - **Trascinamento tra contesti diversi** (evento su più giorni nel mese, cambio di risorsa nella timeline): nella fase 4. Il calcolo dello slot di arrivo lato client si basa solo su attributi generati dal server.
-- **Eventi assegnati a più risorse**: ripetuti in ogni riga o colonna; dettagli nella fase 3.
+- **Eventi assegnati a più risorse**: ripetuti in ogni riga o colonna; dettagli nella fase 2 (timeline) e nella fase 3 (colonne per risorsa).
 - **Opzioni del configuratore UI**: nella fase 5.
