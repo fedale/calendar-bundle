@@ -1,0 +1,125 @@
+{# Timeline view. One scroll container holds a header row and the resource
+   rows; each row is a two-column grid (resource area | track). The resource
+   area sticks to the left and the header to the top, in CSS alone. Positions
+   inside a track are percentages from the server (--cal-left, --cal-width);
+   the track is as wide as its slots (--cal-slots × --cal-slot-width). #}
+{% set domain = 'CalendarBundle' %}
+{% set time_skeleton = calendar.timeSkeleton %}
+<div class="cal-timeline"
+     style="--cal-slots: {{ model.slots|length }}; --cal-area-width: {{ model.areaWidth }}; --cal-area-cols: {{ model.columns|length }};"
+     data-controller="cal-timeline"
+     data-cal-timeline-windows-value="{{ model.windows|json_encode }}"
+     data-cal-timeline-scroll-value="{{ model.scrollTo }}">
+    <div class="cal-timeline__scroller" data-cal-timeline-target="scroller">
+        <div class="cal-tl-head">
+            <div class="cal-tl-area cal-tl-area--head">
+                <div class="cal-tl-area__label">{{ model.areaLabel ? model.areaLabel|trans({}, null, locale) : 'resources.label'|trans({}, domain, locale) }}</div>
+                <div class="cal-tl-area__columns">
+                    {% for column in model.columns %}
+                        <div class="cal-tl-cell">{{ column.label ? column.label|trans({}, null, locale) }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="cal-tl-track cal-tl-track--head" data-cal-timeline-target="track">
+                <div class="cal-tl-head__groups">
+                    {% for group in model.groups %}
+                        <div class="cal-tl-head__group" style="--cal-left: {{ cal_pct(group.left) }}; --cal-width: {{ cal_pct(group.width) }};">
+                            <span>
+                                {%- if group.isWeek -%}
+                                    {{ 'timeline.week'|trans({'%number%': group.start.format('W') + 0}, domain, locale) }}
+                                {%- else -%}
+                                    {{ cal_format(group.start, 'EEEEdMMMM', locale) }}
+                                {%- endif -%}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="cal-tl-head__slots">
+                    {% for slot in model.slots %}
+                        <div class="cal-tl-head__slot{{ model.daySlots and slot.start.format('N') >= 6 ? ' cal-tl-head__slot--weekend' }}" style="--cal-left: {{ cal_pct(slot.left) }}; --cal-width: {{ cal_pct(slot.width) }};">
+                            {%- if model.daySlots -%}
+                                <span class="cal-tl-head__weekday">{{ cal_format(slot.start, 'EEEEE', locale) }}</span> {{ cal_format(slot.start, 'd', locale) }}
+                            {%- else -%}
+                                <time datetime="{{ slot.start.format('c') }}">{{ cal_format(slot.start, time_skeleton, locale) }}</time>
+                            {%- endif -%}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="cal-tl-body">
+            <div class="cal-tl-overlay" aria-hidden="true">
+                {% for band in model.bands %}
+                    {% set color = cal_color(band.item.event.style.color) %}
+                    <div class="cal-band cal-tl-band{{ band.item.event.style.cssClass ? ' ' ~ band.item.event.style.cssClass }}"
+                         style="--cal-left: {{ cal_pct(band.left) }}; --cal-width: {{ cal_pct(band.width) }};{{ color ? ' --cal-event-color: ' ~ color ~ ';' }}"
+                         title="{{ band.item.title }}"></div>
+                {% endfor %}
+                {% if model.now is not null %}
+                    <div class="cal-tl-now" style="--cal-left: {{ cal_pct(model.now) }};" data-cal-timeline-target="now"></div>
+                {% endif %}
+            </div>
+
+            {% for row in model.rows %}
+                {% set row_index = loop.index %}
+                <div class="cal-tl-row{{ row.isGroup ? ' cal-tl-row--group' }}" style="--cal-lanes: {{ max(row.layout.laneCount + (row.layout.more is empty ? 0 : 1), 1) }}; --cal-depth: {{ row.depth }};">
+                    <div class="cal-tl-area">
+                        {% if row.isGroup %}
+                            <div class="cal-tl-cell cal-tl-cell--group">
+                                {{ _self.toggle(row, domain, locale) }}
+                                <span>{{ row.label }}</span>
+                            </div>
+                        {% else %}
+                            {% for cell in row.cells %}
+                                <div class="cal-tl-cell{{ loop.first ? ' cal-tl-cell--first' }}">
+                                    {% if loop.first %}
+                                        {% if row.hasChildren %}{{ _self.toggle(row, domain, locale) }}{% else %}<span class="cal-tl-toggle-space"></span>{% endif %}
+                                    {% endif %}
+                                    <span>{{ cell }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="cal-tl-track">
+                        {% for band in row.bands %}
+                            {% set color = cal_color(band.item.event.style.color) %}
+                            <div class="cal-band cal-tl-band" style="--cal-left: {{ cal_pct(band.left) }}; --cal-width: {{ cal_pct(band.width) }};{{ color ? ' --cal-event-color: ' ~ color ~ ';' }}" title="{{ band.item.title }}"></div>
+                        {% endfor %}
+                        {% for segment in row.layout.segments %}
+                            {{ include('@FedaleCalendar/view/_event.html.twig', {
+                                item: segment.item,
+                                show_time: false,
+                                extra_class: ' cal-event--bar cal-tl-event' ~ (segment.continuesBefore ? ' cal-event--continues-before') ~ (segment.continuesAfter ? ' cal-event--continues-after'),
+                                extra_style: ' --cal-left: ' ~ cal_pct(segment.left) ~ '; --cal-width: ' ~ cal_pct(segment.width) ~ '; --cal-lane: ' ~ segment.lane ~ ';',
+                            }) }}
+                        {% endfor %}
+                        {% for chip in row.layout.more %}
+                            {% set popover_id = 'cal-' ~ calendar.calendar ~ '-tl-' ~ row_index ~ '-' ~ loop.index %}
+                            <button type="button" class="cal-tl-more" popovertarget="{{ popover_id }}"
+                                    style="--cal-left: {{ cal_pct(chip.left) }}; --cal-width: {{ cal_pct(chip.width) }}; --cal-lane: {{ row.layout.laneCount }};">
+                                {{- 'month.more'|trans({'%count%': chip.items|length}, domain, locale) -}}
+                            </button>
+                            <div class="cal-popover" id="{{ popover_id }}" popover>
+                                <h3 class="cal-popover__title">{{ row.label }}</h3>
+                                <ul class="cal-popover__list">
+                                    {% for item in chip.items %}
+                                        <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item}) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% macro toggle(row, domain, locale) %}
+    <button type="button" class="cal-tl-toggle" aria-expanded="{{ row.collapsed ? 'false' : 'true' }}"
+            aria-label="{{ (row.collapsed ? 'timeline.expand' : 'timeline.collapse')|trans({'%name%': row.label}, domain, locale) }}"
+            data-action="live#action" data-live-action-param="toggle" data-live-key-param="{{ row.key }}">
+        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+{% endmacro %}

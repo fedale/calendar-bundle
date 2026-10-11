@@ -3,7 +3,6 @@
 namespace Fedale\CalendarBundle\Tests\Options;
 
 use Fedale\CalendarBundle\Options\CalendarOptions;
-use Fedale\CalendarBundle\Options\ListRange;
 use Fedale\CalendarBundle\Options\OptionsMerger;
 use Fedale\CalendarBundle\Options\TimeFormat;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -15,11 +14,13 @@ final class CalendarOptionsTest extends TestCase
     {
         $options = CalendarOptions::fromArray(CalendarOptions::DEFAULTS);
 
-        self::assertSame(['month', 'list'], $options->enabledViews);
+        self::assertSame(['month', 'listMonth'], $options->enabledViews);
+        self::assertSame('timeline', $options->variant('timelineWeek')->type);
+        self::assertSame(['range' => 'week', 'slotMinutes' => 360], $options->variant('timelineWeek')->params);
+        self::assertSame([['prev', 'today', 'next']], $options->toolbar['start']);
         self::assertSame('month', $options->defaultView);
         self::assertSame(1, $options->firstDay);
         self::assertSame(TimeFormat::H24, $options->timeFormat);
-        self::assertSame(ListRange::Month, $options->listRange);
         self::assertSame(3, $options->dayMaxEvents);
     }
 
@@ -35,7 +36,13 @@ final class CalendarOptionsTest extends TestCase
      */
     public static function invalidTrees(): iterable
     {
-        yield 'default view not enabled' => [['display' => ['views' => ['enabled' => ['list'], 'default' => 'month']]], 'display.views.default'];
+        yield 'default view not enabled' => [['display' => ['views' => ['enabled' => ['listMonth'], 'default' => 'month']]], 'display.views.default'];
+        yield 'undeclared view enabled' => [['display' => ['views' => ['enabled' => ['month', 'agenda']]]], 'display.views.enabled'];
+        yield 'variant without type' => [['display' => ['views' => ['variants' => ['agenda' => ['range' => 'week']]]]], 'display.views.variants.agenda'];
+        yield 'unknown toolbar item' => [['display' => ['toolbar' => ['start' => 'prev,add']]], 'display.toolbar.start'];
+        yield 'button with url and event' => [['display' => ['buttons' => ['add' => ['label' => 'Add', 'url' => '/new', 'event' => 'x']]]], 'display.buttons.add'];
+        yield 'unsafe area width' => [['display' => ['resources' => ['width' => '10rem; color: red']]], 'display.resources.width'];
+        yield 'column without field' => [['display' => ['resources' => ['columns' => [['label' => 'Room']]]]], 'display.resources.columns.0'];
         yield 'no view enabled' => [['display' => ['views' => ['enabled' => []]]], 'display.views.enabled'];
         yield 'first day out of range' => [['display' => ['firstDay' => 0]], 'display.firstDay'];
         yield 'every day hidden' => [['display' => ['hiddenDays' => [1, 2, 3, 4, 5, 6, 7]]], 'display.hiddenDays'];
@@ -56,6 +63,28 @@ final class CalendarOptionsTest extends TestCase
         $this->expectExceptionMessage('"'.$path.'"');
 
         CalendarOptions::fromArray(OptionsMerger::merge(CalendarOptions::DEFAULTS, $override));
+    }
+
+    public function testCustomVariantsButtonsAndToolbar(): void
+    {
+        $options = CalendarOptions::fromArray(OptionsMerger::merge(CalendarOptions::DEFAULTS, ['display' => [
+            'views' => [
+                'enabled' => ['timelineDay', 'fortnight'],
+                'default' => 'timelineDay',
+                'variants' => [
+                    'timelineDay' => ['dayStart' => '08:00'],
+                    'fortnight' => ['type' => 'timeline', 'range' => 'week', 'label' => 'Two weeks'],
+                ],
+            ],
+            'buttons' => ['add' => ['label' => 'Add event', 'event' => 'rooms:add']],
+            'toolbar' => ['start' => 'add prev,today,next', 'end' => 'timelineDay fortnight'],
+        ]]));
+
+        // A built-in variant overridden key by key keeps its other parameters.
+        self::assertSame(['range' => 'day', 'slotMinutes' => 60, 'dayStart' => '08:00'], $options->variant('timelineDay')->params);
+        self::assertSame('Two weeks', $options->variant('fortnight')->label);
+        self::assertSame([['add'], ['prev', 'today', 'next']], $options->toolbar['start']);
+        self::assertSame('rooms:add', $options->buttons['add']->event);
     }
 
     public function testIsHiddenUsesIsoDays(): void

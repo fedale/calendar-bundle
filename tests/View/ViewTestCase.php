@@ -13,15 +13,21 @@ abstract class ViewTestCase extends TestCase
 {
     /**
      * @param array<string, mixed> $display
+     * @param list<string>         $collapsed
      */
-    protected function context(string $date, array $display = [], string $today = '2026-10-10', string $locale = 'it'): ViewContext
+    protected function context(string $date, array $display = [], string $today = '2026-10-10', string $locale = 'it', string $view = 'month', string $now = '2026-10-10 12:00', array $collapsed = []): ViewContext
     {
+        $options = CalendarOptions::fromArray(OptionsMerger::merge(CalendarOptions::DEFAULTS, ['display' => $display]));
+
         return new ViewContext(
             date: Items::at($date),
             today: Items::at($today),
-            options: CalendarOptions::fromArray(OptionsMerger::merge(CalendarOptions::DEFAULTS, ['display' => $display])),
+            options: $options,
             timezone: Items::tz(),
             locale: $locale,
+            variant: $options->variant($view),
+            now: Items::at($now),
+            collapsed: $collapsed,
         );
     }
 

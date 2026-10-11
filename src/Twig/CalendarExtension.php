@@ -22,7 +22,14 @@ final class CalendarExtension extends AbstractExtension
         return [
             new TwigFunction('cal_format', $this->formatter->format(...)),
             new TwigFunction('cal_color', $this->color(...)),
+            new TwigFunction('cal_pct', $this->percent(...)),
         ];
+    }
+
+    /** A fraction (0..1) as a CSS percentage, dot-decimal whatever the PHP locale. */
+    public function percent(float $fraction): string
+    {
+        return rtrim(rtrim(number_format($fraction * 100, 4, '.', ''), '0'), '.').'%';
     }
 
     public function color(?string $color): ?string

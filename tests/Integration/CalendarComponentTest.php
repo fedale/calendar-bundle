@@ -61,9 +61,9 @@ final class CalendarComponentTest extends KernelTestCase
         self::assertSame('novembre 2026', $component->render()->crawler()->filter('.cal-toolbar__title')->text());
         self::assertNull($component->render()->crawler()->filter('[data-live-action-param="today"]')->attr('disabled'));
 
-        $component->call('changeView', ['view' => 'list']);
+        $component->call('changeView', ['view' => 'listMonth']);
         $crawler = $component->render()->crawler();
-        self::assertSame('list', $component->component()->view);
+        self::assertSame('listMonth', $component->component()->view);
         self::assertCount(1, $crawler->filter('.cal-list__day'));
         self::assertStringContainsString('Next month', $crawler->filter('.cal-list')->text());
 
@@ -82,7 +82,7 @@ final class CalendarComponentTest extends KernelTestCase
 
     public function testListViewDescribesMultiDayEvents(): void
     {
-        $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'list'])->render()->crawler();
+        $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'listMonth'])->render()->crawler();
 
         // 12, 13, 14-16 (three-day trip), 21.
         self::assertCount(6, $crawler->filter('.cal-list__day'));

@@ -3,39 +3,59 @@
 {% set domain = 'CalendarBundle' %}
 {% set locale = this.context.locale %}
 {% set label = this.label %}
-{% set root_attributes = {class: 'cal cal--view-' ~ this.activeView} %}
+{% set root_attributes = {class: 'cal cal--view-' ~ this.options.variant(this.activeView).type} %}
 {% if label %}
     {% set root_attributes = root_attributes|merge({'aria-label': label|trans({}, null, locale)}) %}
 {% endif %}
 <div {{ attributes.defaults(root_attributes) }} data-loading="addClass(cal--loading)">
     <header class="cal-toolbar">
-        <div class="cal-toolbar__nav">
-            <button type="button" class="cal-btn cal-btn--icon"
-                    data-action="live#action" data-live-action-param="previous"
-                    aria-label="{{ 'toolbar.previous'|trans({}, domain, locale) }}"
-                    title="{{ 'toolbar.previous'|trans({}, domain, locale) }}">&lsaquo;</button>
-            <button type="button" class="cal-btn"
-                    data-action="live#action" data-live-action-param="today"
-                    {{ this.showingToday ? 'disabled' }}>{{ 'toolbar.today'|trans({}, domain, locale) }}</button>
-            <button type="button" class="cal-btn cal-btn--icon"
-                    data-action="live#action" data-live-action-param="next"
-                    aria-label="{{ 'toolbar.next'|trans({}, domain, locale) }}"
-                    title="{{ 'toolbar.next'|trans({}, domain, locale) }}">&rsaquo;</button>
-        </div>
-
-        <h2 class="cal-toolbar__title" aria-live="polite">{{ this.title }}</h2>
-
-        {% if this.options.enabledViews|length > 1 %}
-            <div class="cal-toolbar__views" role="group" aria-label="{{ 'toolbar.views'|trans({}, domain, locale) }}">
-                {% for name in this.options.enabledViews %}
-                    <button type="button" class="cal-btn"
-                            aria-pressed="{{ name == this.activeView ? 'true' : 'false' }}"
-                            data-action="live#action" data-live-action-param="changeView" data-live-view-param="{{ name }}">
-                        {{- ('view.' ~ name)|trans({}, domain, locale) -}}
-                    </button>
+        {% set toolbar = this.toolbar %}
+        {% for zone in ['start', 'center', 'end'] %}
+            <div class="cal-toolbar__zone cal-toolbar__zone--{{ zone }}">
+                {% for group in toolbar[zone] ?? [] %}
+                    <div class="cal-toolbar__group{{ group|length > 1 ? ' cal-toolbar__group--joined' }}">
+                        {% for item in group %}
+                            {% if item.type == 'title' %}
+                                <h2 class="cal-toolbar__title" aria-live="polite">{{ this.title }}</h2>
+                            {% elseif item.type == 'prev' %}
+                                <button type="button" class="cal-btn cal-btn--icon"
+                                        data-action="live#action" data-live-action-param="previous"
+                                        aria-label="{{ 'toolbar.previous'|trans({}, domain, locale) }}"
+                                        title="{{ 'toolbar.previous'|trans({}, domain, locale) }}">&lsaquo;</button>
+                            {% elseif item.type == 'next' %}
+                                <button type="button" class="cal-btn cal-btn--icon"
+                                        data-action="live#action" data-live-action-param="next"
+                                        aria-label="{{ 'toolbar.next'|trans({}, domain, locale) }}"
+                                        title="{{ 'toolbar.next'|trans({}, domain, locale) }}">&rsaquo;</button>
+                            {% elseif item.type == 'today' %}
+                                <button type="button" class="cal-btn"
+                                        data-action="live#action" data-live-action-param="today"
+                                        {{ this.showingToday ? 'disabled' }}>{{ 'toolbar.today'|trans({}, domain, locale) }}</button>
+                            {% elseif item.type == 'view' %}
+                                <button type="button" class="cal-btn"
+                                        aria-pressed="{{ item.name == this.activeView ? 'true' : 'false' }}"
+                                        data-action="live#action" data-live-action-param="changeView" data-live-view-param="{{ item.name }}">
+                                    {{- item.label ? item.label|trans({}, null, locale) : ('view.' ~ item.name)|trans({}, domain, locale) -}}
+                                </button>
+                            {% elseif item.type == 'button' %}
+                                {% set button = item.button %}
+                                {% if button.url %}
+                                    <a class="cal-btn cal-btn--primary" href="{{ button.url }}"{% if button.frame %} data-turbo-frame="{{ button.frame }}"{% endif %}>{{ button.label|trans({}, null, locale) }}</a>
+                                {% else %}
+                                    <button type="button" class="cal-btn cal-btn--primary"
+                                            data-controller="cal-button"
+                                            data-action="cal-button#dispatch"
+                                            data-cal-button-event-value="{{ button.event }}"
+                                            data-cal-button-detail-value="{{ {calendar: this.calendar, key: button.key, view: this.activeView, date: this.context.date.format('Y-m-d')}|json_encode }}">
+                                        {{- button.label|trans({}, null, locale) -}}
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                 {% endfor %}
             </div>
-        {% endif %}
+        {% endfor %}
     </header>
 
     <div class="cal-body">

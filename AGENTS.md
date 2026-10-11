@@ -49,16 +49,18 @@ hands it.
 | `src/Contract/` | Every public interface: sources, definitions, views, timezone resolver |
 | `src/Attribute/` | `#[AsCalendar]`, `#[AsCalendarSource]`, `#[AsCalendarView]`: they carry the id/key/name the registries index by |
 | `src/Definition/` | `AbstractCalendar`, `CalendarRegistry` |
-| `src/Options/` | `CalendarOptions` (**the** list of accepted keys, with defaults and validation), `OptionsMerger`, `CalendarOptionsResolver` (precedence) |
-| `src/Source/` | `SourceRegistry`, `EventCollector` (fetch, filter, convert, sort), `CalendarItem` (an event as the views see it) |
-| `src/View/` | One class per view (`MonthView`, `ListView`), `ViewContext`, `ViewRegistry` |
-| `src/View/Layout/` | Layout engines shared by views (`WeekRowLayout`) |
+| `src/Options/` | `CalendarOptions` (**the** list of accepted keys, with defaults and validation), `OptionsMerger`, `CalendarOptionsResolver` (precedence), and the value objects it builds: `ViewVariant`, `ViewRange`, `ToolbarButton`, `ResourceColumn` |
+| `src/Source/` | `SourceRegistry`, `EventCollector` (fetch, filter, convert, sort), `ResourceCollector`, `CalendarItem` (an event as the views see it) |
+| `src/View/` | One class per view type (`MonthView`, `ListView`, `TimelineView`), `ViewContext`, `ViewRegistry` |
+| `src/View/Layout/` | The month's row layout (`WeekRowLayout`) |
+| `src/View/Timeline/` | The timeline's engines and models: `TimeAxis` (instants to fractions of the axis), `LaneLayout` (stacking and "+N more"), rows and segments |
 | `src/View/Model/` | The view models the templates render |
 | `src/Time/` | `Days` (DST-safe day arithmetic), `DateFormatter` (ICU skeletons), the default timezone resolver |
 | `src/Twig/` | The `Fedale:Calendar` Live Component and the Twig extension (`cal_format`, `cal_color`) |
 | `templates/components/` | The component shell (toolbar + active view) |
 | `templates/view/` | One template per view, plus `_event.html.twig` |
 | `assets/styles/calendar.css` | The stylesheet, exposed to AssetMapper as `@fedale/calendar-bundle` |
+| `assets/controllers/` | Stimulus controllers (`cal-timeline`, `cal-button`), declared in `assets/package.json` |
 | `translations/` | `CalendarBundle.{en,it}.yaml`, the system domain |
 | `config/services.yaml` | Service wiring |
 | `tests/Integration/` | A minimal kernel (`TestKernel`) and fixtures to render the real component |
@@ -77,10 +79,16 @@ hands it.
   or 25 hours. Compare calendar days by their `Y-m-d`.
 - **All-day events are dates, timed events are instants.** `CalendarItem::fromEvent()` is the single
   place that converts them; views only read `firstDay`, `lastDay`, `start`, `end`.
-- **Views are pure.** A view gets a `ViewContext` and sorted items and returns a view model. It does
-  not fetch, read the request or the clock; the component supplies all of that.
-- **The component state is `calendar`, `view` and `date`.** Anything that must survive a re-render
-  is a `LiveProp`; a bad value from the URL falls back to a default instead of throwing.
+- **Views are pure.** A view gets a `ViewContext` (with its variant, today and now), sorted items
+  and, when it asks for them, resources, and returns a view model. It does not fetch, read the
+  request or the clock; the component supplies all of that.
+- **Views are types, variants are names.** `#[AsCalendarView]` registers a type (`timeline`); the
+  toolbar, the URL and `views.enabled` use variant names (`timelineWeek`). A type validates its own
+  parameters in `validateVariant()`.
+- **The component state is `calendar`, `view`, `date` and `collapsed`.** Anything that must survive
+  a re-render is a `LiveProp`; a bad value from the URL falls back to a default instead of throwing.
+- **Timeline positions are fractions of the axis**, rendered as percentages with `cal_pct()`.
+  Inside a day the axis uses wall-clock minutes, so hour columns keep their width on DST days.
 - **Source-provided values that land in a `style` attribute go through `cal_color()`** (or an
   equivalent whitelist). HTML escaping does not stop CSS injection there.
 
@@ -125,8 +133,10 @@ comment describes, update the comment in the same edit.
   properties set by the server.
 - CSS: every visual value reads a `--cal-*` token; 4-space indent. Prefer native platform features
   over JavaScript (the "+N more" list is a native `popover`).
-- Stimulus controllers (when they arrive) go under `assets/controllers/`, one per file, registered in
-  `assets/package.json`, and must survive Live re-renders.
+- Stimulus controllers go under `assets/controllers/`, one per file, registered in
+  `assets/package.json`, and must survive Live re-renders. They only do what the server cannot
+  (scrolling, a moving clock, dispatching DOM events): the calendar must render correctly without
+  them.
 - Translations: when you add a key, add it to **every** locale file.
 
 ## Documentation

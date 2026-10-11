@@ -8,7 +8,9 @@ use Fedale\CalendarBundle\Definition\CalendarRegistry;
 use Fedale\CalendarBundle\Model\CalendarQuery;
 use Fedale\CalendarBundle\Options\CalendarOptions;
 use Fedale\CalendarBundle\Options\CalendarOptionsResolver;
+use Fedale\CalendarBundle\Options\ToolbarButton;
 use Fedale\CalendarBundle\Source\EventCollector;
+use Fedale\CalendarBundle\Source\ResourceCollector;
 use Fedale\CalendarBundle\Time\DateFormatter;
 use Fedale\CalendarBundle\Time\Days;
 use Fedale\CalendarBundle\View\ViewContext;
@@ -23,9 +25,9 @@ use Symfony\UX\LiveComponent\DefaultActionTrait;
 /**
  * The calendar: `<twig:Fedale:Calendar calendar="shifts" />`.
  *
- * Its whole state is the calendar id, the view and the focused date; view and
- * date live in the URL, so every period has a link and the browser history
- * works. Navigation is a round trip: the server re-renders the view, the
+ * Its whole state is the calendar id, the view (a variant name), the focused
+ * date and the collapsed resource rows; view and date live in the URL, so
+ * every period has a link and the browser history works. Navigation is a round trip: the server re-renders the view, the
  * browser never builds the grid.
  */
 #[AsLiveComponent(name: 'Fedale:Calendar', template: '@FedaleCalendar/components/Calendar.html.twig')]
@@ -44,6 +46,16 @@ final class Calendar
     #[LiveProp(writable: true, url: true)]
     public ?string $date = null;
 
+    /**
+     * Keys of the collapsed timeline rows (groups and parent resources). Kept
+     * on the server so it survives re-renders and navigation, and collapsed
+     * rows are not rendered at all.
+     *
+     * @var list<string>
+     */
+    #[LiveProp]
+    public array $collapsed = [];
+
     /** @var array<string, object> view model per calendar|view|date, built once per render */
     private array $models = [];
 
@@ -52,6 +64,7 @@ final class Calendar
         private readonly CalendarOptionsResolver $optionsResolver,
         private readonly ViewRegistry $views,
         private readonly EventCollector $collector,
+        private readonly ResourceCollector $resourceCollector,
         private readonly DateFormatter $formatter,
         private readonly TimezoneResolverInterface $timezoneResolver,
         private readonly ClockInterface $clock,
@@ -86,6 +99,14 @@ final class Calendar
         }
     }
 
+    #[LiveAction]
+    public function toggle(#[LiveArg] string $key): void
+    {
+        $this->collapsed = \in_array($key, $this->collapsed, true)
+            ? array_values(array_diff($this->collapsed, [$key]))
+            : [...$this->collapsed, $key];
+    }
+
     public function getOptions(): CalendarOptions
     {
         return $this->optionsResolver->resolve($this->calendar);
@@ -110,7 +131,8 @@ final class Calendar
     {
         $options = $this->getOptions();
         $timezone = $options->timezone !== null ? new \DateTimeZone($options->timezone) : $this->timezoneResolver->resolve();
-        $today = Days::start($this->clock->now()->setTimezone($timezone));
+        $now = $this->clock->now()->setTimezone($timezone);
+        $today = Days::start($now);
 
         return new ViewContext(
             date: $this->parseDate($timezone) ?? $today,
@@ -118,6 +140,9 @@ final class Calendar
             options: $options,
             timezone: $timezone,
             locale: $options->locale ?? $this->formatter->defaultLocale(),
+            variant: $options->variant($this->getActiveView()),
+            now: $now,
+            collapsed: $this->collapsed,
         );
     }
 
@@ -137,12 +162,16 @@ final class Calendar
     public function getModel(): object
     {
         $context = $this->getContext();
-        $key = $this->calendar.'|'.$this->getActiveView().'|'.$context->date->format('Y-m-d');
+        $key = $this->calendar.'|'.$this->getActiveView().'|'.$context->date->format('Y-m-d').'|'.implode(',', $this->collapsed);
 
         if (!isset($this->models[$key])) {
             $view = $this->activeView();
             $query = new CalendarQuery($view->range($context), $context->timezone);
-            $this->models[$key] = $view->build($context, $this->collector->collect($context->options, $query));
+            $this->models[$key] = $view->build(
+                $context,
+                $this->collector->collect($context->options, $query),
+                $view->usesResources() ? $this->resourceCollector->collect($context->options, $query) : [],
+            );
         }
 
         return $this->models[$key];
@@ -153,6 +182,44 @@ final class Calendar
         return $this->activeView()->template();
     }
 
+    /**
+     * The toolbar, zone by zone (start, center, end), as groups of items:
+     * ['type' => prev|next|today|title] , ['type' => 'view', 'name', 'label'],
+     * or ['type' => 'button', 'button' => ToolbarButton].
+     *
+     * @return array<string, list<list<array{type: string, name?: string, label?: string|null, button?: ToolbarButton}>>>
+     */
+    public function getToolbar(): array
+    {
+        $options = $this->getOptions();
+        $toolbar = [];
+        foreach ($options->toolbar as $zone => $groups) {
+            foreach ($groups as $group) {
+                $items = [];
+                foreach ($group as $item) {
+                    if ($item === 'views') {
+                        if (\count($options->enabledViews) > 1) {
+                            foreach ($options->enabledViews as $name) {
+                                $items[] = ['type' => 'view', 'name' => $name, 'label' => $options->variant($name)->label];
+                            }
+                        }
+                    } elseif (isset($options->buttons[$item])) {
+                        $items[] = ['type' => 'button', 'button' => $options->buttons[$item]];
+                    } elseif (isset($options->variants[$item])) {
+                        $items[] = ['type' => 'view', 'name' => $item, 'label' => $options->variant($item)->label];
+                    } else {
+                        $items[] = ['type' => $item];
+                    }
+                }
+                if ($items !== []) {
+                    $toolbar[$zone][] = $items;
+                }
+            }
+        }
+
+        return $toolbar;
+    }
+
     /** ICU skeleton for event times, from the `timeFormat` option. */
     public function getTimeSkeleton(): string
     {
@@ -161,7 +228,7 @@ final class Calendar
 
     private function activeView(): CalendarViewInterface
     {
-        return $this->views->get($this->getActiveView());
+        return $this->views->get($this->getOptions()->variant($this->getActiveView())->type);
     }
 
     private function move(int $step): void

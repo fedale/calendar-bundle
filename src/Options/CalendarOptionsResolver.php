@@ -55,9 +55,15 @@ class CalendarOptionsResolver implements ResetInterface
             throw new \InvalidArgumentException(sprintf('Invalid options for calendar "%s": %s', $id, $e->getMessage()), 0, $e);
         }
 
-        foreach ($options->enabledViews as $view) {
-            if (!$this->views->has($view)) {
-                throw new \InvalidArgumentException(sprintf('Calendar "%s" enables the unknown view "%s"; known views: %s.', $id, $view, implode(', ', $this->views->names())));
+        foreach ($options->enabledViews as $name) {
+            $variant = $options->variant($name);
+            if (!$this->views->has($variant->type)) {
+                throw new \InvalidArgumentException(sprintf('Calendar "%s" enables the view "%s" of unknown type "%s"; known types: %s.', $id, $name, $variant->type, implode(', ', $this->views->names())));
+            }
+            try {
+                $this->views->get($variant->type)->validateVariant($variant);
+            } catch (\InvalidArgumentException $e) {
+                throw new \InvalidArgumentException(sprintf('Invalid options for calendar "%s": %s', $id, $e->getMessage()), 0, $e);
             }
         }
         foreach ($options->sources as $source) {

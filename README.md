@@ -2,9 +2,9 @@
 
 > **A server-rendered calendar for Symfony UX that knows nothing about your domain.**
 
-Calendar Bundle renders month, list (and, on the roadmap, week, day, year, timeline and
-resource) views of time-based data: work shifts, seat bookings, lessons, anything with a start and
-an end. It is a **presentation component**: your application keeps the domain, the rules and the
+Calendar Bundle renders month, list and resource timeline views (and, on the roadmap, week, day,
+year and resource-column views) of time-based data: work shifts, seat bookings, room schedules,
+lessons, anything with a start and an end. It is a **presentation component**: your application keeps the domain, the rules and the
 data, and hands the calendar a read-only view of them.
 
 - **Server-rendered.** A Live Component lays out the grid in PHP and Twig. The browser never builds
@@ -13,8 +13,8 @@ data, and hands the calendar a read-only view of them.
   `EventSourceInterface`). There is no universal `Appointment` entity to adopt.
 - **CSS-framework agnostic.** Its own `cal-*` classes, styled through `--cal-*` custom properties.
 
-> **Status:** early development (0.1). The month and list views are in place; the rest of the
-> roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
+> **Status:** early development (0.1). The month, list and timeline views are in place; the rest
+> of the roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
 
 ---
 
@@ -73,6 +73,24 @@ import '@fedale/calendar-bundle/styles/calendar.css';
 
 Alternatively, link it from your layout:
 `<link rel="stylesheet" href="{{ asset('@fedale/calendar-bundle/styles/calendar.css') }}">`.
+
+The bundle ships two small Stimulus controllers: `cal-timeline` (scrolls the timeline to "now" and
+keeps the "now" line moving) and `cal-button` (custom toolbar buttons that dispatch a DOM event).
+Flex registers them in `assets/controllers.json`; without Flex, add them yourself:
+
+```json
+{
+    "controllers": {
+        "@fedale/calendar-bundle": {
+            "timeline": { "enabled": true, "fetch": "lazy" },
+            "button": { "enabled": true, "fetch": "lazy" }
+        }
+    }
+}
+```
+
+The calendar works without them: the timeline then opens at its start, and the "now" line stays
+where the server put it.
 
 ## Your first calendar
 
@@ -138,7 +156,7 @@ final class ShiftCalendar extends AbstractCalendar
     {
         return [
             'display' => [
-                'views' => ['enabled' => ['month', 'list'], 'default' => 'month'],
+                'views' => ['enabled' => ['month', 'listMonth'], 'default' => 'month'],
                 'hiddenDays' => [7],
             ],
             'integration' => ['sources' => ['shifts']],
@@ -216,25 +234,44 @@ Options form a tree. The bundle defaults, with every accepted key:
 [
     'display' => [
         'views' => [
-            'enabled' => ['month', 'list'],
+            'enabled' => ['month', 'listMonth'],   // variant names, in toolbar order
             'default' => 'month',
+            'variants' => [                        // see "Views"
+                'month' => ['type' => 'month'],
+                'listDay' => ['type' => 'list', 'range' => 'day'],
+                'listWeek' => ['type' => 'list', 'range' => 'week'],
+                'listMonth' => ['type' => 'list', 'range' => 'month'],
+                'timelineDay' => ['type' => 'timeline', 'range' => 'day', 'slotMinutes' => 60],
+                'timelineWeek' => ['type' => 'timeline', 'range' => 'week', 'slotMinutes' => 360],
+                'timelineMonth' => ['type' => 'timeline', 'range' => 'month', 'slotMinutes' => 1440],
+            ],
         ],
-        'firstDay' => 1,            // ISO-8601: 1 = Monday ... 7 = Sunday
-        'hiddenDays' => [],         // ISO-8601 day numbers, e.g. [6, 7]
+        'toolbar' => [                  // see "Toolbar"
+            'start' => 'prev,today,next',
+            'center' => 'title',
+            'end' => 'views',
+        ],
+        'buttons' => [],                // custom toolbar buttons, see "Toolbar"
+        'firstDay' => 1,                // ISO-8601: 1 = Monday ... 7 = Sunday
+        'hiddenDays' => [],             // ISO-8601 day numbers, e.g. [6, 7]
         'weekNumbers' => false,
-        'timeFormat' => '24h',      // or '12h'
-        'nextDayThreshold' => '00:00', // HH:MM, see below
-        'locale' => null,           // null = the request locale
-        'timezone' => null,         // null = TimezoneResolverInterface
+        'timeFormat' => '24h',          // or '12h'
+        'nextDayThreshold' => '00:00',  // HH:MM, see below
+        'locale' => null,               // null = the request locale
+        'timezone' => null,             // null = TimezoneResolverInterface
         'month' => [
-            'dayMaxEvents' => 3,    // lanes per week; the rest goes into "+N more"
+            'dayMaxEvents' => 3,        // lanes per week; the rest goes into "+N more"
         ],
-        'list' => [
-            'range' => 'month',     // or 'week'
+        'resources' => [                // the timeline's resource area, see "Timeline"
+            'label' => null,            // heading; null = "Resources"
+            'columns' => [['field' => 'title', 'label' => null]],
+            'groupBy' => null,          // a field to group top-level resources by
+            'width' => '16rem',
+            'rowMaxEvents' => 3,        // lanes per row; the rest goes into "+N more"; null = unlimited
         ],
     ],
     'integration' => [
-        'sources' => [],            // keys of #[AsCalendarSource] services
+        'sources' => [],                // keys of #[AsCalendarSource] services
     ],
 ]
 ```
@@ -245,7 +282,8 @@ days; with `'09:00'` it shows on the day it starts only. Events ending exactly a
 show on the next day, whatever the threshold.
 
 An unknown key is an error that names its full path (`Unknown calendar option
-"display.month.dayMaxEvent"`), so a typo fails loudly instead of being ignored.
+"display.month.dayMaxEvent"`), so a typo fails loudly instead of being ignored. The two maps whose
+keys you choose, `views.variants` and `buttons`, are validated entry by entry instead.
 
 ### Precedence
 
@@ -257,8 +295,9 @@ From lowest to highest:
 4. the definition's `viewConfig()`;
 5. the view and date in the URL.
 
-Subtrees are merged key by key, while lists (`views.enabled`, `hiddenDays`, `sources`) are replaced
-as a whole.
+Subtrees are merged key by key, while lists (`views.enabled`, `hiddenDays`, `resources.columns`,
+`sources`) are replaced as a whole. So a calendar can change one parameter of a built-in variant
+(`'variants' => ['timelineDay' => ['dayStart' => '08:00']]`) and keep the others.
 
 ```yaml
 # config/packages/fedale_calendar.yaml
@@ -277,18 +316,129 @@ fedale_calendar:
 
 ## Views
 
-| Name | What it shows |
-|---|---|
-| `month` | Whole weeks around the month. Multi-day events are continuous bars. A day with more events than `dayMaxEvents` shows "+N more", which opens the full list in a popover (native `popover`, no JavaScript) |
-| `list` | An agenda of the days that have events, for a month or a week. Multi-day events are listed on every day they cover |
+A **view type** is a layout; a **variant** is a type with its parameters, under a name. The toolbar
+and the URL use variant names, so one type serves several durations, as `timelineDay`,
+`timelineWeek` and `timelineMonth` do. Declare your own variants next to the built-in ones:
 
-Both honor `firstDay`, `hiddenDays` and the display timezone, and both are laid out in PHP: the
-server sends grid positions as custom properties (`--cal-start`, `--cal-span`, `--cal-row`).
+```php
+'views' => [
+    'enabled' => ['timelineDay', 'timelineWorkWeek'],
+    'default' => 'timelineDay',
+    'variants' => [
+        'timelineDay' => ['dayStart' => '07:00', 'dayEnd' => '21:00'],
+        'timelineWorkWeek' => [
+            'type' => 'timeline',
+            'range' => 'week',
+            'slotMinutes' => 120,
+            'label' => 'Work week',     // toolbar label; default: the "view.<name>" translation
+        ],
+    ],
+],
+```
+
+| Type | Parameters | What it shows |
+|---|---|---|
+| `month` | none | Whole weeks around the month. Multi-day events are continuous bars. A day with more events than `dayMaxEvents` shows "+N more", which opens the full list in a popover (native `popover`, no JavaScript) |
+| `list` | `range`: `day`, `week` or `month` | An agenda of the days that have events. Multi-day events are listed on every day they cover |
+| `timeline` | `range`: `day`, `week` or `month`; `slotMinutes`: a divisor of 1440; `dayStart` / `dayEnd`: the window of each day (HH:MM, `24:00` allowed as end); `scrollTime`: where the view opens when "now" is off screen (default `08:00`) | Resources down the side, time across (see "Timeline") |
+
+Every view honors `firstDay`, `hiddenDays` and the display timezone, and is laid out in PHP: the
+server sends positions as custom properties (`--cal-start`, `--cal-span`, `--cal-left`,
+`--cal-width`, ...), the browser only paints them.
+
+### Timeline
+
+The timeline shows one row per resource. Resources come from the calendar's sources that also
+implement `ResourceSourceInterface`:
+
+```php
+#[AsCalendarSource('rooms')]
+final class RoomSource implements EventSourceInterface, ResourceSourceInterface
+{
+    public function getResources(CalendarQuery $query): iterable
+    {
+        yield new CalendarResource('aud-a', 'Auditorium A', data: ['building' => '460 Bryant', 'seats' => 40]);
+        yield new CalendarResource('aud-d', 'Auditorium D', data: ['building' => '460 Bryant', 'seats' => 40]);
+        // Nested under Auditorium D:
+        yield new CalendarResource('aud-d1', 'Room D1', parentId: 'aud-d', data: ['building' => '460 Bryant', 'seats' => 10]);
+    }
+
+    public function getEvents(CalendarQuery $query): iterable
+    {
+        // ... CalendarEvent objects with resourceIds: ['aud-a'], ...
+    }
+}
+```
+
+- An event shows on the row of each of its `resourceIds`; an event booked in two rooms is a bar on
+  both rows. Foreground events without resources are not shown on the timeline.
+- A background event with resources is a band on those rows; without resources it spans every row
+  (a public holiday, a building closure).
+- `display.resources.columns` picks what the resource area shows: `title`, `id`, or any key of the
+  resource's `data`. `groupBy` groups the top-level resources by one of those fields.
+- Groups and parent resources collapse and expand. The state is kept by the component, so it
+  survives navigation, and collapsed rows are not rendered at all.
+- Rows stack overlapping events in lanes; beyond `rowMaxEvents`, the rest goes into "+N more" chips
+  placed over the time they cover.
+- The resource area and the header stay in place while the track scrolls, with CSS alone
+  (`position: sticky`). A red line marks "now".
+
+```php
+'display' => [
+    'views' => [
+        'enabled' => ['timelineDay', 'timelineWeek', 'timelineMonth'],
+        'default' => 'timelineDay',
+    ],
+    'resources' => [
+        'label' => 'Rooms',
+        'columns' => [
+            ['field' => 'building', 'label' => 'Building'],
+            ['field' => 'title', 'label' => 'Room'],
+            ['field' => 'seats', 'label' => 'Seats'],
+        ],
+        'groupBy' => 'building',
+        'width' => '26rem',
+    ],
+],
+```
+
+### Toolbar
+
+`display.toolbar` lays out three zones, `start`, `center` and `end`. Each zone is a string of groups
+separated by spaces; items in a group are separated by commas and drawn as one joined control.
+
+| Item | What it is |
+|---|---|
+| `prev`, `next`, `today` | Navigation |
+| `title` | The period heading |
+| `views` | One button per enabled variant (nothing when only one is enabled) |
+| a variant name | That variant's button alone |
+| a key of `display.buttons` | A custom button |
+
+A custom button has a `label` and either a `url` (optionally with a Turbo `frame` to load it into,
+such as your own booking form) or an `event`, a DOM event it dispatches for your JavaScript to
+handle. The event bubbles, with `{calendar, key, view, date}` as its detail.
+
+```php
+'display' => [
+    'toolbar' => ['start' => 'add prev,today,next', 'center' => 'title', 'end' => 'views'],
+    'buttons' => [
+        'add' => ['label' => 'Add event', 'event' => 'rooms:add'],
+        'export' => ['label' => 'Export', 'url' => '/rooms/export'],
+    ],
+],
+```
+
+```js
+document.addEventListener('rooms:add', (event) => {
+    openBookingForm(event.detail.date);
+});
+```
 
 ### Adding a view
 
-A view implements `CalendarViewInterface` and is registered with `#[AsCalendarView('name')]`.
-Reusing a built-in name replaces the built-in view.
+A view type implements `CalendarViewInterface` and is registered with `#[AsCalendarView('type')]`.
+Reusing a built-in type replaces the built-in view.
 
 ```php
 use Fedale\CalendarBundle\Attribute\AsCalendarView;
@@ -297,16 +447,19 @@ use Fedale\CalendarBundle\Contract\CalendarViewInterface;
 #[AsCalendarView('fortnight')]
 final class FortnightView implements CalendarViewInterface
 {
+    // validateVariant(): reject parameters this type does not understand
+    // usesResources():   whether build() needs the resources
     // range():    the period to fetch around the focused date
     // navigate(): the focused date one step back or forward
     // title():    the localized heading
-    // build():    a view model, from the context and the sorted items
+    // build():    a view model, from the context (with the variant), the sorted items and the resources
     // template(): the Twig template rendering that view model as `model`
 }
 ```
 
-Enable it in a calendar with `'views' => ['enabled' => ['month', 'fortnight']]`, and add the
-`view.fortnight` key to the `CalendarBundle` translation domain for the toolbar button.
+Declare a variant of it and enable that:
+`'views' => ['enabled' => ['month', 'fortnight'], 'variants' => ['fortnight' => ['type' => 'fortnight']]]`.
+Give it a `label`, or add the `view.fortnight` key to the `CalendarBundle` translation domain.
 
 ---
 
@@ -319,6 +472,10 @@ Every visual value is a custom property on `.cal`. Override the tokens rather th
     --cal-accent: #0f766e;
     --cal-radius: 8px;
     --cal-week-min-height: 8rem;
+    --cal-slot-width: 5rem;       /* timeline slot width */
+    --cal-tl-max-height: 60vh;    /* timeline height before it scrolls */
+    --cal-primary: #0f766e;       /* custom buttons */
+    --cal-now: #dc2626;           /* the "now" line */
 }
 ```
 

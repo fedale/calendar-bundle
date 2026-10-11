@@ -2,7 +2,20 @@
   "name": "@fedale/calendar-bundle",
   "version": "0.1.0",
   "symfony": {
-    "controllers": {},
+    "controllers": {
+      "timeline": {
+        "main": "controllers/cal-timeline_controller.js",
+        "name": "cal-timeline",
+        "fetch": "lazy",
+        "enabled": true
+      },
+      "button": {
+        "main": "controllers/cal-button_controller.js",
+        "name": "cal-button",
+        "fetch": "lazy",
+        "enabled": true
+      }
+    },
     "importmap": {
       "@hotwired/stimulus": "^3.2.2"
     }

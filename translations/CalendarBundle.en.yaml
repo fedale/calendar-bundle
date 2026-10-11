@@ -9,6 +9,12 @@ view:
     day: Day
     year: Year
     list: List
+    listDay: 'Day list'
+    listWeek: 'Week list'
+    listMonth: 'List'
+    timelineDay: 'Day'
+    timelineWeek: 'Week'
+    timelineMonth: 'Month'
     timeline: Timeline
     resources: Resources
 event:
@@ -22,3 +28,9 @@ list:
     all_day: All day
     from: 'from %time%'
     until: 'until %time%'
+resources:
+    label: Resources
+timeline:
+    week: 'W %number%'
+    collapse: 'Collapse %name%'
+    expand: 'Expand %name%'

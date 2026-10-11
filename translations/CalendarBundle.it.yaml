@@ -9,6 +9,12 @@ view:
     day: Giorno
     year: Anno
     list: Lista
+    listDay: 'Lista del giorno'
+    listWeek: 'Lista settimanale'
+    listMonth: 'Lista'
+    timelineDay: 'Giorno'
+    timelineWeek: 'Settimana'
+    timelineMonth: 'Mese'
     timeline: Timeline
     resources: Risorse
 event:
@@ -22,3 +28,9 @@ list:
     all_day: Tutto il giorno
     from: 'dalle %time%'
     until: 'fino alle %time%'
+resources:
+    label: Risorse
+timeline:
+    week: 'S %number%'
+    collapse: 'Comprimi %name%'
+    expand: 'Espandi %name%'

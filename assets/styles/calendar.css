@@ -20,12 +20,17 @@
     --cal-weekend-bg: #fbfbfc;
     --cal-today-bg: #fff8e1;
     --cal-accent: #2563eb;
+    --cal-primary: #7c3aed;
+    --cal-now: #ef4444;
     --cal-event-color: var(--cal-accent);
     --cal-event-fg: #fff;
     --cal-radius: 4px;
     --cal-gap: 2px;
     --cal-lane-height: 1.45rem;
     --cal-week-min-height: 6.5rem;
+    --cal-slot-width: 4rem;
+    --cal-tl-header-height: 2.1rem;
+    --cal-tl-max-height: 75vh;
 
     font-family: var(--cal-font);
     color: var(--cal-fg);
@@ -50,7 +55,18 @@
     transition: opacity .15s;
 }
 
-/* Toolbar */
+/* Localized dates often start lowercase ("ottobre 2026", "venerdì"): raise
+   the first letter only, as capitalize would raise every word. */
+.cal-toolbar__title::first-letter,
+.cal-month__weekday::first-letter,
+.cal-popover__title::first-letter,
+.cal-list__date::first-letter,
+.cal-tl-head__group > span::first-letter,
+.cal-tl-head__slot::first-letter {
+    text-transform: uppercase;
+}
+
+/* Toolbar: three zones (start, center, end) of button groups. */
 
 .cal-toolbar {
     display: flex;
@@ -60,18 +76,53 @@
     margin-bottom: .75rem;
 }
 
-.cal-toolbar__nav,
-.cal-toolbar__views {
+.cal-toolbar__zone {
     display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+}
+
+.cal-toolbar__zone--center {
+    justify-content: center;
+}
+
+.cal-toolbar__zone--end {
+    justify-content: flex-end;
+}
+
+.cal-toolbar__group {
+    display: flex;
+    align-items: center;
     gap: .25rem;
 }
 
+.cal-toolbar__group--joined {
+    gap: 0;
+}
+
+.cal-toolbar__group--joined > .cal-btn {
+    border-radius: 0;
+}
+
+.cal-toolbar__group--joined > .cal-btn + .cal-btn {
+    margin-left: -1px;
+}
+
+.cal-toolbar__group--joined > .cal-btn:first-child {
+    border-radius: var(--cal-radius) 0 0 var(--cal-radius);
+}
+
+.cal-toolbar__group--joined > .cal-btn:last-child {
+    border-radius: 0 var(--cal-radius) var(--cal-radius) 0;
+}
+
 .cal-toolbar__title {
-    flex: 1;
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    text-transform: capitalize;
+    white-space: nowrap;
 }
 
 .cal-btn {
@@ -97,6 +148,20 @@
     background: var(--cal-accent);
     border-color: var(--cal-accent);
     color: #fff;
+}
+
+.cal-btn--primary {
+    display: inline-flex;
+    align-items: center;
+    background: var(--cal-primary);
+    border-color: var(--cal-primary);
+    color: #fff;
+    text-decoration: none;
+}
+
+.cal-btn--primary:hover:not(:disabled) {
+    border-color: var(--cal-primary);
+    filter: brightness(1.1);
 }
 
 .cal-btn--icon {
@@ -208,7 +273,6 @@ a.cal-event:hover .cal-event__title {
     color: var(--cal-muted);
     font-size: .8rem;
     text-align: center;
-    text-transform: capitalize;
 }
 
 .cal-month__weekday abbr {
@@ -328,7 +392,6 @@ a.cal-event:hover .cal-event__title {
 .cal-popover__title {
     margin: 0 0 .5rem;
     font-size: .9rem;
-    text-transform: capitalize;
 }
 
 .cal-popover__list {
@@ -357,7 +420,6 @@ a.cal-event:hover .cal-event__title {
     background: var(--cal-outside-bg);
     font-size: .85rem;
     font-weight: 600;
-    text-transform: capitalize;
 }
 
 .cal-list__day--today .cal-list__date {
@@ -404,6 +466,280 @@ a.cal-event:hover .cal-event__title {
     border-radius: var(--cal-radius);
     color: var(--cal-muted);
     text-align: center;
+}
+
+/* Timeline */
+
+.cal-timeline {
+    border: 1px solid var(--cal-border);
+    border-radius: var(--cal-radius);
+    overflow: hidden;
+}
+
+.cal-timeline__scroller {
+    position: relative;
+    max-height: var(--cal-tl-max-height);
+    overflow: auto;
+}
+
+/* Every row is a two-column grid: the resource area and the track, as wide
+   as its slots but never narrower than the space left. */
+.cal-tl-head,
+.cal-tl-row {
+    display: grid;
+    grid-template-columns: var(--cal-area-width) minmax(calc(var(--cal-slots) * var(--cal-slot-width)), 1fr);
+}
+
+.cal-tl-body,
+.cal-tl-head {
+    width: max-content;
+    min-width: 100%;
+}
+
+.cal-tl-head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--cal-bg);
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-tl-area {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(var(--cal-area-cols), minmax(0, 1fr));
+    background: var(--cal-bg);
+    border-right: 1px solid var(--cal-border);
+}
+
+.cal-tl-area--head {
+    z-index: 4;
+    grid-template-columns: 1fr;
+}
+
+.cal-tl-area__label {
+    height: var(--cal-tl-header-height);
+    padding: 0 .75rem;
+    border-bottom: 1px solid var(--cal-border);
+    font-size: .85rem;
+    line-height: var(--cal-tl-header-height);
+}
+
+.cal-tl-area__columns {
+    display: grid;
+    grid-template-columns: repeat(var(--cal-area-cols), minmax(0, 1fr));
+    height: var(--cal-tl-header-height);
+}
+
+.cal-tl-cell {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    min-width: 0;
+    padding: 0 .6rem;
+    font-size: .85rem;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.cal-tl-cell > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cal-tl-cell + .cal-tl-cell {
+    border-left: 1px solid var(--cal-border);
+}
+
+.cal-tl-cell--first {
+    padding-left: calc(.4rem + var(--cal-depth, 0) * 1.25rem);
+}
+
+.cal-tl-cell--group {
+    grid-column: 1 / -1;
+    padding-left: .4rem;
+    font-weight: 600;
+}
+
+/* The border belongs to the cells, not the row: a row border would leave a
+   1px gap under the sticky area through which the "now" line shows. */
+.cal-tl-row > .cal-tl-area,
+.cal-tl-row > .cal-tl-track {
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-tl-row--group > .cal-tl-area,
+.cal-tl-row--group > .cal-tl-track {
+    min-height: 2rem;
+}
+
+.cal-tl-row--group,
+.cal-tl-row--group .cal-tl-area {
+    background: var(--cal-outside-bg);
+}
+
+.cal-tl-toggle {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.cal-tl-toggle svg {
+    transition: transform .15s;
+}
+
+.cal-tl-toggle[aria-expanded="false"] svg {
+    transform: rotate(-90deg);
+}
+
+.cal-tl-toggle-space {
+    flex: none;
+    width: 1rem;
+}
+
+.cal-tl-track {
+    position: relative;
+    min-height: calc(var(--cal-lanes, 1) * (var(--cal-lane-height) + var(--cal-gap)) + 2 * var(--cal-gap) + .25rem);
+    /* Slot lines, sized in percent so they match the header slots. */
+    background-image: linear-gradient(to right, var(--cal-border) 1px, transparent 1px);
+    background-size: calc(100% / var(--cal-slots)) 100%;
+}
+
+.cal-tl-track--head {
+    min-height: 0;
+    background: none;
+}
+
+.cal-tl-head__groups,
+.cal-tl-head__slots {
+    position: relative;
+    height: var(--cal-tl-header-height);
+}
+
+.cal-tl-head__groups {
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-tl-head__group,
+.cal-tl-head__slot {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--cal-left);
+    width: var(--cal-width);
+    padding: 0 .4rem;
+    border-left: 1px solid var(--cal-border);
+    font-size: .8rem;
+    line-height: var(--cal-tl-header-height);
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* The label of a day or week sticks to the left edge of the visible track
+   while its cell scrolls by; that needs the cell to let it overflow. */
+.cal-tl-head__group {
+    overflow: visible;
+}
+
+.cal-tl-head__group > span {
+    display: inline-block;
+    position: sticky;
+    left: calc(var(--cal-area-width) + .5rem);
+}
+
+.cal-tl-head__slot {
+    color: var(--cal-muted);
+}
+
+.cal-tl-head__slot--weekend {
+    background: var(--cal-weekend-bg);
+}
+
+.cal-tl-body {
+    position: relative;
+}
+
+/* Background bands without a resource and the "now" line, over every row. */
+.cal-tl-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--cal-area-width);
+    right: 0;
+    pointer-events: none;
+}
+
+.cal-tl-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--cal-left);
+    width: var(--cal-width);
+}
+
+.cal-tl-now {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--cal-left);
+    z-index: 1;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--cal-now);
+}
+
+.cal-tl-now::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cal-now);
+}
+
+.cal-tl-event,
+.cal-tl-more {
+    position: absolute;
+    top: calc(var(--cal-gap) * 2 + var(--cal-lane) * (var(--cal-lane-height) + var(--cal-gap)));
+    left: var(--cal-left);
+    width: var(--cal-width);
+    min-width: 4px;
+    box-sizing: border-box;
+    border-right: 1px solid var(--cal-bg);
+}
+
+.cal-tl-more {
+    height: var(--cal-lane-height);
+    padding: 0 .35rem;
+    border-radius: var(--cal-radius);
+    border-top: 0;
+    border-bottom: 0;
+    border-left: 0;
+    background: var(--cal-outside-bg);
+    color: var(--cal-muted);
+    font: inherit;
+    font-size: .75rem;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.cal-tl-more:hover {
+    color: var(--cal-fg);
 }
 
 @media (max-width: 600px) {

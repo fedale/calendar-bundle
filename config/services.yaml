@@ -22,6 +22,7 @@ services:
             $calendarConfigs: '%fedale_calendar.calendars%'
 
     Fedale\CalendarBundle\Source\EventCollector: ~
+    Fedale\CalendarBundle\Source\ResourceCollector: ~
     Fedale\CalendarBundle\Time\DateFormatter: ~
 
     Fedale\CalendarBundle\Time\DefaultTimezoneResolver: ~
@@ -30,6 +31,7 @@ services:
     # Built-in views; tagged through #[AsCalendarView].
     Fedale\CalendarBundle\View\MonthView: ~
     Fedale\CalendarBundle\View\ListView: ~
+    Fedale\CalendarBundle\View\TimelineView: ~
 
     Fedale\CalendarBundle\Twig\CalendarExtension: ~
     Fedale\CalendarBundle\Twig\Components\Calendar: ~

@@ -14,24 +14,24 @@ final class ListViewTest extends ViewTestCase
     {
         $view = new ListView($this->formatter());
 
-        $month = $view->range($this->context('2026-10-10'));
+        $month = $view->range($this->context('2026-10-10', view: 'listMonth'));
         self::assertSame(['2026-10-01', '2026-11-01'], [$month->start->format('Y-m-d'), $month->end->format('Y-m-d')]);
 
-        $week = $view->range($this->context('2026-10-10', ['list' => ['range' => 'week']]));
+        $week = $view->range($this->context('2026-10-10', view: 'listWeek'));
         self::assertSame(['2026-10-05', '2026-10-12'], [$week->start->format('Y-m-d'), $week->end->format('Y-m-d')]);
-        self::assertSame('2026-10-17', $view->navigate($this->context('2026-10-10', ['list' => ['range' => 'week']]), 1)->format('Y-m-d'));
+        self::assertSame('2026-10-17', $view->navigate($this->context('2026-10-10', view: 'listWeek'), 1)->format('Y-m-d'));
     }
 
     public function testWeekTitleShowsBothEnds(): void
     {
-        $title = (new ListView($this->formatter()))->title($this->context('2026-10-10', ['list' => ['range' => 'week']], locale: 'en'));
+        $title = (new ListView($this->formatter()))->title($this->context('2026-10-10', locale: 'en', view: 'listWeek'));
 
         self::assertSame('Oct 5 – Oct 11, 2026', $title);
     }
 
     public function testListsMultiDayEventsOnEveryDayWithTheirKind(): void
     {
-        $model = (new ListView($this->formatter()))->build($this->context('2026-10-10'), [
+        $model = (new ListView($this->formatter()))->build($this->context('2026-10-10', view: 'listMonth'), [
             Items::item('trip', '2026-10-05 18:00', '2026-10-07 09:00'),
             Items::item('meeting', '2026-10-06 10:00', '2026-10-06 11:00'),
             Items::item('holiday', '2026-10-08', '2026-10-09', allDay: true),
@@ -53,7 +53,7 @@ final class ListViewTest extends ViewTestCase
 
     public function testSkipsHiddenDays(): void
     {
-        $model = (new ListView($this->formatter()))->build($this->context('2026-10-10', ['hiddenDays' => [6]]), [
+        $model = (new ListView($this->formatter()))->build($this->context('2026-10-10', ['hiddenDays' => [6]], view: 'listMonth'), [
             Items::item('sat', '2026-10-10 10:00', '2026-10-10 11:00'),
         ]);
 

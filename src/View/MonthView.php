@@ -5,6 +5,7 @@ namespace Fedale\CalendarBundle\View;
 use Fedale\CalendarBundle\Attribute\AsCalendarView;
 use Fedale\CalendarBundle\Contract\CalendarViewInterface;
 use Fedale\CalendarBundle\Model\DateRange;
+use Fedale\CalendarBundle\Options\ViewVariant;
 use Fedale\CalendarBundle\Source\CalendarItem;
 use Fedale\CalendarBundle\Time\DateFormatter;
 use Fedale\CalendarBundle\Time\Days;
@@ -22,6 +23,18 @@ final class MonthView implements CalendarViewInterface
 {
     public function __construct(private readonly DateFormatter $formatter)
     {
+    }
+
+    public function validateVariant(ViewVariant $variant): void
+    {
+        if ($variant->params !== []) {
+            throw new \InvalidArgumentException(sprintf('Calendar view "%s" (month) takes no parameters, got "%s".', $variant->name, implode('", "', array_keys($variant->params))));
+        }
+    }
+
+    public function usesResources(): bool
+    {
+        return false;
     }
 
     public function range(ViewContext $context): DateRange
@@ -45,7 +58,7 @@ final class MonthView implements CalendarViewInterface
         return $this->formatter->format($context->date, 'MMMMy', $context->locale);
     }
 
-    public function build(ViewContext $context, array $items): MonthViewModel
+    public function build(ViewContext $context, array $items, array $resources = []): MonthViewModel
     {
         $options = $context->options;
         $range = $this->range($context);

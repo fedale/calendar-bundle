@@ -37,7 +37,7 @@ final class CalendarOptionsResolverTest extends TestCase
 
         return new CalendarOptionsResolver(
             new CalendarRegistry(new ServiceLocator(['shifts' => fn() => $definition])),
-            new ViewRegistry(new ServiceLocator(['month' => fn() => $view, 'list' => fn() => $view])),
+            new ViewRegistry(new ServiceLocator(['month' => fn() => $view, 'list' => fn() => $view, 'timeline' => fn() => $view])),
             new SourceRegistry(new ServiceLocator(['shifts' => fn() => $source])),
             $defaults,
             $calendarConfigs,
@@ -65,11 +65,11 @@ final class CalendarOptionsResolverTest extends TestCase
         $this->resolver(['display' => ['colour' => 'red']])->resolve('shifts');
     }
 
-    public function testRejectsUnknownViews(): void
+    public function testRejectsVariantsOfUnknownTypes(): void
     {
-        $this->expectExceptionMessage('Calendar "shifts" enables the unknown view "year"');
+        $this->expectExceptionMessage('Calendar "shifts" enables the view "year" of unknown type "year"');
 
-        $this->resolver(['display' => ['views' => ['enabled' => ['month', 'year']]]])->resolve('shifts');
+        $this->resolver(['display' => ['views' => ['enabled' => ['month', 'year'], 'variants' => ['year' => ['type' => 'year']]]]])->resolve('shifts');
     }
 
     public function testRejectsUnknownSources(): void
