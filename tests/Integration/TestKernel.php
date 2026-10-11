@@ -3,6 +3,9 @@
 namespace Fedale\CalendarBundle\Tests\Integration;
 
 use Fedale\CalendarBundle\FedaleCalendarBundle;
+use Fedale\CalendarBundle\Tests\Integration\Fixtures\MemoryScopedStore;
+use Fedale\CalendarBundle\Tests\Integration\Fixtures\NoSettingStorage;
+use Fedale\SettingBundle\FedaleSettingBundle;
 use Psr\Clock\ClockInterface;
 use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
@@ -18,8 +21,9 @@ use Symfony\UX\TwigComponent\TwigComponentBundle;
 
 /**
  * Smallest app able to render the calendar: Framework, Twig, Twig/Live
- * components and the bundle, with a demo calendar and a frozen clock
- * (Saturday 10 October 2026, Europe/Rome).
+ * components, setting-bundle (UI settings, stored in memory) and the bundle,
+ * with demo calendars and a frozen clock (Saturday 10 October 2026,
+ * Europe/Rome).
  */
 final class TestKernel extends Kernel
 {
@@ -32,6 +36,7 @@ final class TestKernel extends Kernel
         yield new StimulusBundle();
         yield new TwigComponentBundle();
         yield new LiveComponentBundle();
+        yield new FedaleSettingBundle();
         yield new FedaleCalendarBundle();
     }
 
@@ -60,12 +65,23 @@ final class TestKernel extends Kernel
             'translator' => ['fallbacks' => ['en']],
             'router' => ['utf8' => true],
             'php_errors' => ['log' => true],
+            'form' => ['enabled' => true, 'csrf_protection' => false],
+        ]);
+        // UI settings in memory; the free-form settings are not used.
+        $container->extension('fedale_setting', [
+            'provider' => NoSettingStorage::class,
+            'cache' => ['enabled' => false],
+            'scoped' => ['store' => MemoryScopedStore::class],
         ]);
         $container->extension('twig', ['strict_variables' => true]);
         $container->extension('twig_component', ['anonymous_template_directory' => 'components/']);
         $container->extension('fedale_calendar', [
             'defaults' => ['display' => ['timezone' => 'Europe/Rome']],
         ]);
+
+        // TwigBundle wires its form integration only when symfony/form is a
+        // production dependency; for this bundle it is an optional one.
+        $container->import(\dirname(__DIR__, 2).'/vendor/symfony/twig-bundle/Resources/config/form.php');
 
         $services = $container->services()->defaults()->autowire()->autoconfigure();
         $services->load('Fedale\\CalendarBundle\\Tests\\Integration\\Fixtures\\', __DIR__.'/Fixtures/');
@@ -76,6 +92,7 @@ final class TestKernel extends Kernel
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->import('@LiveComponentBundle/config/routes.php');
+        $routes->import('@LiveComponentBundle/config/routes.php')->prefix('/_components');
+        $routes->import(\dirname(__DIR__, 2).'/src/Controller/UiSettingsController.php', 'attribute')->prefix('/calendar/_settings');
     }
 }

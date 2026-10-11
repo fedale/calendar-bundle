@@ -25,6 +25,8 @@ event:
     busy: Occupato
     delete: 'Elimina %title%'
     confirm_delete: 'Eliminare questo evento?'
+    keyboard_move: 'Le frecce lo spostano, Maiusc con le frecce cambia la fine, Canc lo elimina.'
+    keyboard_other: 'Invio lo apre, Canc lo elimina.'
 month:
     week: Settimana
     more: '+%count% altri'
@@ -48,3 +50,42 @@ intent:
     gone: 'Questo evento non esiste più. Il calendario mostra lo stato attuale.'
     stale: 'Questo evento è stato modificato nel frattempo. Il calendario mostra lo stato attuale: riprova.'
     invalid: 'L''orario richiesto non è valido.'
+ui_settings:
+    open: 'Impostazioni del calendario'
+    title: 'Impostazioni del calendario'
+    close: 'Chiudi'
+    save: 'Salva'
+    saved: 'Impostazioni salvate.'
+    scope: 'Applica a'
+    scope_global: 'Tutti i calendari'
+    scope_global_help: 'Valori per tutti i calendari. Ogni calendario può sovrascriverli.'
+    scope_calendar_help: 'Valori solo per questo calendario; i campi vuoti ereditano.'
+    empty: 'Niente da impostare qui.'
+    inherit_code: 'Come da configurazione'
+    inherit_value: 'Eredita (%value%)'
+    default_view:
+        label: 'Vista predefinita'
+    first_day:
+        label: 'Primo giorno della settimana'
+        monday: 'Lunedì'
+        saturday: 'Sabato'
+        sunday: 'Domenica'
+    weekends:
+        label: 'Fine settimana'
+        show: 'Mostra'
+        hide: 'Nascondi'
+    time_format:
+        label: "Formato dell'ora"
+        24h: '24 ore (14:30)'
+        12h: '12 ore (2:30 PM)'
+    week_numbers:
+        label: 'Numeri di settimana'
+        show: 'Mostra'
+        hide: 'Nascondi'
+    slot_minutes:
+        label: 'Intervalli orari'
+        15: '15 minuti'
+        30: '30 minuti'
+        60: '1 ora'
+year:
+    events: '{0} Nessun evento|{1} 1 evento|]1,Inf[ %count% eventi'

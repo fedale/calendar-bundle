@@ -23,6 +23,12 @@ import { getComponent } from '@symfony/ux-live-component';
  *
  * Before calling the server, a cancelable "cal:intent" DOM event is
  * dispatched with the action and its arguments: preventDefault() aborts.
+ *
+ * Keyboard, on a focused event: arrows move it, Shift+arrows move its end,
+ * Delete removes it, Enter activates it. Steps follow the track: a slot on a
+ * time axis, a day on day columns (a week up and down); in a timeline, up
+ * and down change the resource row. Focus returns to the event once the
+ * calendar has re-rendered.
  */
 
 const THRESHOLD = 4;
@@ -236,6 +242,13 @@ export default class extends Controller {
         if (!item || event.target !== item) {
             return;
         }
+        if (event.key.startsWith('Arrow') && !event.altKey && !event.ctrlKey && !event.metaKey) {
+            if (this.keyboardEdit(item, event.key, event.shiftKey)) {
+                event.preventDefault();
+            }
+
+            return;
+        }
         if ((event.key === 'Delete' || event.key === 'Backspace') && item.hasAttribute('data-cal-deletable')) {
             event.preventDefault();
             this.remove(item);
@@ -243,6 +256,60 @@ export default class extends Controller {
             event.preventDefault();
             this.intent('clickEvent', { source: item.dataset.calSource, id: item.dataset.calId, version: item.dataset.calVersion ?? '' });
         }
+    }
+
+    /**
+     * Moves (or with Shift resizes) the event by one step of its track.
+     * Returns whether the key was used.
+     */
+    keyboardEdit(item, key, resize) {
+        const track = item.closest('[data-cal-track]');
+        if (!track || !item.dataset.calStart || !(resize ? item.querySelector('[data-cal-resize]') : item.hasAttribute('data-cal-movable'))) {
+            return false;
+        }
+        const kind = track.dataset.calTrack;
+        const step = this.unit(track);
+        const forward = key === 'ArrowRight' || key === 'ArrowDown';
+        const sign = forward ? 1 : -1;
+        const horizontal = key === 'ArrowLeft' || key === 'ArrowRight';
+        let delta = 0;
+        let toResource = item.dataset.calResource ?? '';
+
+        if (kind === 'columns') {
+            delta = sign * (horizontal ? DAY : 7 * DAY);
+        } else if (kind === 'y') {
+            delta = sign * (horizontal ? DAY : step);
+        } else if (horizontal) {
+            delta = sign * step;
+        } else {
+            if (resize) {
+                return false;
+            }
+            // Up and down in a timeline: the neighboring resource row.
+            const rows = [...this.element.querySelectorAll('[data-cal-track="x"]')];
+            const next = rows[rows.indexOf(track) + sign];
+            if (!next) {
+                return true;
+            }
+            toResource = next.dataset.calResource;
+        }
+
+        const allDay = 'calAllDay' in item.dataset;
+        const start = parse(item.dataset.calStart);
+        const end = parse(item.dataset.calEnd);
+        const args = { source: item.dataset.calSource, id: item.dataset.calId, version: item.dataset.calVersion ?? '', allDay: allDay ? '1' : '' };
+        if (resize) {
+            const unit = kind === 'columns' ? DAY : step;
+            const newEnd = Math.max(start + unit, end + delta);
+            if (newEnd === end) {
+                return true;
+            }
+            this.intent('resizeEvent', { ...args, start: item.dataset.calStart, end: format(newEnd, allDay) }, item);
+        } else {
+            this.intent('moveEvent', { ...args, start: format(start + delta, allDay), end: format(end + delta, allDay), fromResource: item.dataset.calResource ?? '', toResource }, item);
+        }
+
+        return true;
     }
 
     remove(item) {
@@ -270,7 +337,7 @@ export default class extends Controller {
 
     // Server round trip
 
-    async intent(action, args) {
+    async intent(action, args, focused = null) {
         const allowed = this.element.dispatchEvent(new CustomEvent('cal:intent', {
             bubbles: true,
             cancelable: true,
@@ -291,6 +358,10 @@ export default class extends Controller {
             await component.action(action, args);
         } finally {
             this.undoPreview(drag);
+        }
+        // Keyboard edits keep the focus on the event, wherever it now is.
+        if (focused) {
+            this.element.querySelector(`[data-cal-event="${CSS.escape(focused.dataset.calEvent)}"]:not([popover] *)`)?.focus();
         }
     }
 

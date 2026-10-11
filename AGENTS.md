@@ -51,8 +51,11 @@ hands it.
 | `src/Definition/` | `AbstractCalendar`, `CalendarRegistry` |
 | `src/Options/` | `CalendarOptions` (**the** list of accepted keys, with defaults and validation), `OptionsMerger`, `CalendarOptionsResolver` (precedence), and the value objects it builds: `ViewVariant`, `ViewRange`, `ToolbarButton`, `ResourceColumn`, `BusinessHours` |
 | `src/Intent/` | The write side: intents (`SelectRange`, `MoveEvent`, ...), `IntentResult` and `Rejection`, and `IntentDispatcher` (the calendar's own checks, then the source's handler) |
+| `src/UiSettings/` | End-user settings on top of fedale/setting-bundle (optional): `UiSettingInterface`, `AbstractUiSetting`, the built-in settings, `UiSettingsResolver` (namespace `calendar.ui`) |
+| `src/Controller/` | `UiSettingsController`, the body of the settings dialog |
+| `src/Theme/` | `ThemeRegistry`: control classes by class key (`default`, `bootstrap5`, application themes) |
 | `src/Source/` | `SourceRegistry`, `EventCollector` (fetch, filter, convert, sort), `ResourceCollector`, `CalendarItem` (an event as the views see it) |
-| `src/View/` | One class per view type (`MonthView`, `ListView`, `TimelineView`, `TimeGridView`), `ViewContext`, `ViewRegistry`, and helpers shared by views: `ResourceTree` (sorting and nesting), `WindowParams` (slot and day-window parameters) |
+| `src/View/` | One class per view type (`YearView`, `MonthView`, `ListView`, `TimelineView`, `TimeGridView`), `ViewContext`, `ViewRegistry`, and helpers shared by views: `ResourceTree` (sorting and nesting), `WindowParams` (slot and day-window parameters) |
 | `src/View/Layout/` | The month's row layout (`WeekRowLayout`) |
 | `src/View/Timeline/` | The timeline's engines and models: `TimeAxis` (instants to fractions of the axis, also used by the time grid), `LaneLayout` (stacking and "+N more"), rows and segments |
 | `src/View/TimeGrid/` | The time grid's engine and models: `ColumnLayout` (side-by-side placement of overlapping events), columns and events |
@@ -62,7 +65,7 @@ hands it.
 | `templates/components/` | The component shell (toolbar + active view) |
 | `templates/view/` | One template per view, plus `_event.html.twig` |
 | `assets/styles/calendar.css` | The stylesheet, exposed to AssetMapper as `@fedale/calendar-bundle` |
-| `assets/controllers/` | Stimulus controllers (`cal-interact`, `cal-now`, `cal-button`), declared in `assets/package.json` |
+| `assets/controllers/` | Stimulus controllers (`cal-interact`, `cal-ui-settings`, `cal-now`, `cal-button`), declared in `assets/package.json` |
 | `translations/` | `CalendarBundle.{en,it}.yaml`, the system domain |
 | `config/services.yaml` | Service wiring |
 | `tests/Integration/` | A minimal kernel (`TestKernel`) and fixtures to render the real component |
@@ -100,6 +103,12 @@ hands it.
   model of the calendar.
 - **Undo the drag preview after the action.** Live Components keep changes made by scripts across
   re-renders, so the preview (transform, size, selection box) is removed once the answer arrives.
+- **setting-bundle is optional.** Nothing under `src/UiSettings/` or `src/Controller/` may be
+  needed to render a calendar: the services are only defined when setting-bundle is enabled, and the
+  component works with `UiSettingsResolver` and the URL generator absent.
+- **Templates take control classes from the theme** (`this.cls['button']`, ...), never a
+  hard-coded `cal-btn`, so `bootstrap5` and application themes apply. A new class key goes into
+  `ThemeRegistry::DEFAULT` first.
 - **Source-provided values that land in a `style` attribute go through `cal_color()`** (or an
   equivalent whitelist). HTML escaping does not stop CSS injection there.
 
@@ -148,7 +157,7 @@ comment describes, update the comment in the same edit.
   `assets/package.json`, and must survive Live re-renders. They only do what the server cannot
   (scrolling, a moving clock, dispatching DOM events): the calendar must render correctly without
   them.
-- Translations: when you add a key, add it to **every** locale file.
+- Translations: when you add a key, add it to **every** locale file (en, it, fr, de, es).
 
 ## Documentation
 

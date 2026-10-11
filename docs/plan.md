@@ -285,7 +285,12 @@ Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto
    - l'anteprima del trascinamento viene tolta all'arrivo della risposta: LiveComponent conserva le modifiche fatte dagli script tra un rendering e l'altro;
    - gli argomenti delle azioni Live sono tutti stringhe (il cast dei booleani tra JSON e `LiveArg` non è affidabile);
    - limiti noti: gli eventi dentro un popover "+N altri" non si trascinano; spostamento e ridimensionamento da tastiera sono rimandati all'accessibilità della fase 5.
-5. **Completamento**: vista anno con densità, configuratore UI (dipende dal nucleo di setting-bundle), temi, accessibilità, i18n.
+5. **Completamento** (completata):
+   - **vista anno**: 12 mini-mesi con la densità per giorno (0-4, relativa al giorno più pieno); un giorno si apre nella vista giornaliera più dettagliata abilitata. La densità si conta dagli eventi: `EventDensitySourceInterface` (conteggi forniti dalla fonte) non è stata implementata, perché con ~6000 eventi l'anno il conteggio resta sotto i 100 ms in sviluppo; va ripresa se servirà;
+   - **configuratore UI** sul nucleo di setting-bundle (namespace `calendar.ui`, scope `global` e `calendar:<id>`), sul modello di gridview: impostazioni vista predefinita, primo giorno, weekend, formato dell'ora, numeri di settimana, durata degli slot. **Scostamenti**: la finestra è un `<dialog>` nativo caricato con `fetch` (non un Turbo Frame, per non richiedere Turbo), si apre dalla voce di toolbar `settings` e, dopo il salvataggio, il controller chiede a ogni calendario della pagina di rifare il rendering (nessun `#[LiveListener]`); `apply()` sostituisce `optionPath()` nell'interfaccia, perché alcune impostazioni toccano più foglie;
+   - **temi**: mappa di chiavi di classe per i controlli (`default`, `bootstrap5`, temi dell'applicazione in YAML), come gridview;
+   - **accessibilità**: spostamento e ridimensionamento da tastiera, focus mantenuto dopo il rendering, `aria-description` sugli eventi interattivi. Restano da fare i ruoli ARIA di griglia con navigazione a frecce tra le celle;
+   - **i18n**: inglese, italiano, francese, tedesco e spagnolo.
 6. **Extra**: bridge API Platform. L'applicazione demo esiste già (calendar-demo) e cresce insieme alle fasi.
 
 ## 12. Da approfondire durante le fasi

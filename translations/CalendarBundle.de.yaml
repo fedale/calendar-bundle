@@ -1,0 +1,91 @@
+toolbar:
+    previous: Zurück
+    next: Weiter
+    today: Heute
+    views: Ansichten
+view:
+    month: Monat
+    week: Woche
+    day: Tag
+    year: Jahr
+    list: Liste
+    listDay: 'Tagesliste'
+    listWeek: 'Wochenliste'
+    listMonth: 'Liste'
+    timelineDay: 'Tag'
+    timelineWeek: 'Woche'
+    timelineMonth: 'Monat'
+    timeGridDay: 'Tag'
+    timeGridWeek: 'Woche'
+    resourceTimeGridDay: 'Tag'
+    resourceTimeGridWeek: 'Woche'
+    timeline: Zeitleiste
+    resources: Ressourcen
+event:
+    busy: Belegt
+    delete: '%title% löschen'
+    confirm_delete: 'Diesen Termin löschen?'
+    keyboard_move: 'Pfeiltasten verschieben ihn, Umschalt mit Pfeiltasten ändert sein Ende, Entf löscht ihn.'
+    keyboard_other: 'Eingabe öffnet ihn, Entf löscht ihn.'
+month:
+    week: Woche
+    more: '+%count% weitere'
+    more_label: 'Alle Termine am %date% anzeigen'
+list:
+    empty: Keine Termine in diesem Zeitraum.
+    all_day: Ganztägig
+    from: 'ab %time%'
+    until: 'bis %time%'
+resources:
+    label: Ressourcen
+timeline:
+    week: 'KW %number%'
+    collapse: '%name% einklappen'
+    expand: '%name% ausklappen'
+time_grid:
+    all_day: 'Ganztägig'
+intent:
+    not_allowed: 'Diese Aktion ist nicht erlaubt.'
+    read_only: 'Dieser Kalender kann nicht geändert werden.'
+    gone: 'Dieser Termin existiert nicht mehr. Der Kalender zeigt den aktuellen Stand.'
+    stale: 'Dieser Termin wurde inzwischen geändert. Der Kalender zeigt den aktuellen Stand; bitte erneut versuchen.'
+    invalid: 'Die gewünschte Zeit ist ungültig.'
+ui_settings:
+    open: 'Kalendereinstellungen'
+    title: 'Kalendereinstellungen'
+    close: 'Schließen'
+    save: 'Speichern'
+    saved: 'Einstellungen gespeichert.'
+    scope: 'Anwenden auf'
+    scope_global: 'Alle Kalender'
+    scope_global_help: 'Werte für alle Kalender. Jeder Kalender kann sie überschreiben.'
+    scope_calendar_help: 'Werte nur für diesen Kalender; leere Felder werden geerbt.'
+    empty: 'Hier gibt es nichts einzustellen.'
+    inherit_code: 'Wie konfiguriert'
+    inherit_value: 'Erben (%value%)'
+    default_view:
+        label: 'Standardansicht'
+    first_day:
+        label: 'Erster Wochentag'
+        monday: 'Montag'
+        saturday: 'Samstag'
+        sunday: 'Sonntag'
+    weekends:
+        label: 'Wochenenden'
+        show: 'Anzeigen'
+        hide: 'Ausblenden'
+    time_format:
+        label: 'Zeitformat'
+        24h: '24 Stunden (14:30)'
+        12h: '12 Stunden (2:30 PM)'
+    week_numbers:
+        label: 'Kalenderwochen'
+        show: 'Anzeigen'
+        hide: 'Ausblenden'
+    slot_minutes:
+        label: 'Zeitraster'
+        15: '15 Minuten'
+        30: '30 Minuten'
+        60: '1 Stunde'
+year:
+    events: '{0} Keine Termine|{1} 1 Termin|]1,Inf[ %count% Termine'

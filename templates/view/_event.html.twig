@@ -35,6 +35,7 @@
     {%- if clickable %} data-cal-clickable role="button"{% endif %}
     {%- if deletable %} data-cal-deletable{% endif %}
     {%- if tag == 'div' %} tabindex="0"{% endif %}
+    aria-description="{{ ('event.keyboard_' ~ (movable ? 'move' : 'other'))|trans({}, domain, locale) }}"
     {%- endif %}
     title="{{ title }}">
     {%- if (show_time ?? true) and not item.allDay -%}

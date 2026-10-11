@@ -5,7 +5,8 @@
 {% set label = this.label %}
 {% set root_attributes = {
     class: 'cal cal--view-' ~ this.options.variant(this.activeView).type,
-    'data-controller': 'cal-interact',
+    'data-controller': 'cal-interact cal-ui-settings',
+    'data-cal-ui-settings-url-value': this.settingsUrl ?? '',
     'data-cal-interact-snap-value': this.snapMinutes,
     'data-cal-interact-selectable-value': this.options.selectable ? 'true' : 'false',
     'data-cal-interact-confirm-delete-value': 'event.confirm_delete'|trans({}, domain, locale),
@@ -16,39 +17,46 @@
 <div {{ attributes.defaults(root_attributes) }} data-loading="addClass(cal--loading)">
     <header class="cal-toolbar">
         {% set toolbar = this.toolbar %}
+        {% set cls = this.cls %}
         {% for zone in ['start', 'center', 'end'] %}
             <div class="cal-toolbar__zone cal-toolbar__zone--{{ zone }}">
                 {% for group in toolbar[zone] ?? [] %}
-                    <div class="cal-toolbar__group{{ group|length > 1 ? ' cal-toolbar__group--joined' }}">
+                    <div class="cal-toolbar__group{{ group|length > 1 ? ' ' ~ cls['button.group'] }}"{{ group|length > 1 ? ' role="group"' }}>
                         {% for item in group %}
                             {% if item.type == 'title' %}
                                 <h2 class="cal-toolbar__title" aria-live="polite">{{ this.title }}</h2>
                             {% elseif item.type == 'prev' %}
-                                <button type="button" class="cal-btn cal-btn--icon"
+                                <button type="button" class="{{ cls['button.icon'] }}"
                                         data-action="live#action" data-live-action-param="previous"
                                         aria-label="{{ 'toolbar.previous'|trans({}, domain, locale) }}"
                                         title="{{ 'toolbar.previous'|trans({}, domain, locale) }}">&lsaquo;</button>
                             {% elseif item.type == 'next' %}
-                                <button type="button" class="cal-btn cal-btn--icon"
+                                <button type="button" class="{{ cls['button.icon'] }}"
                                         data-action="live#action" data-live-action-param="next"
                                         aria-label="{{ 'toolbar.next'|trans({}, domain, locale) }}"
                                         title="{{ 'toolbar.next'|trans({}, domain, locale) }}">&rsaquo;</button>
                             {% elseif item.type == 'today' %}
-                                <button type="button" class="cal-btn"
+                                <button type="button" class="{{ cls['button'] }}"
                                         data-action="live#action" data-live-action-param="today"
                                         {{ this.showingToday ? 'disabled' }}>{{ 'toolbar.today'|trans({}, domain, locale) }}</button>
                             {% elseif item.type == 'view' %}
-                                <button type="button" class="cal-btn"
+                                <button type="button" class="{{ cls['button'] }}{{ item.name == this.activeView and cls['button.active'] ? ' ' ~ cls['button.active'] }}"
                                         aria-pressed="{{ item.name == this.activeView ? 'true' : 'false' }}"
                                         data-action="live#action" data-live-action-param="changeView" data-live-view-param="{{ item.name }}">
                                     {{- item.label ? item.label|trans({}, null, locale) : ('view.' ~ item.name)|trans({}, domain, locale) -}}
                                 </button>
+                            {% elseif item.type == 'settings' %}
+                                <button type="button" class="{{ cls['button.icon'] }}" data-action="cal-ui-settings#open"
+                                        aria-label="{{ 'ui_settings.open'|trans({}, domain, locale) }}"
+                                        title="{{ 'ui_settings.open'|trans({}, domain, locale) }}">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4L10.7 6a7 7 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+                                </button>
                             {% elseif item.type == 'button' %}
                                 {% set button = item.button %}
                                 {% if button.url %}
-                                    <a class="cal-btn cal-btn--primary" href="{{ button.url }}"{% if button.frame %} data-turbo-frame="{{ button.frame }}"{% endif %}>{{ button.label|trans({}, null, locale) }}</a>
+                                    <a class="{{ cls['button.primary'] }}" href="{{ button.url }}"{% if button.frame %} data-turbo-frame="{{ button.frame }}"{% endif %}>{{ button.label|trans({}, null, locale) }}</a>
                                 {% else %}
-                                    <button type="button" class="cal-btn cal-btn--primary"
+                                    <button type="button" class="{{ cls['button.primary'] }}"
                                             data-controller="cal-button"
                                             data-action="cal-button#dispatch"
                                             data-cal-button-event-value="{{ button.event }}"
@@ -73,4 +81,17 @@
     <div class="cal-body">
         {{ include(this.viewTemplate, {model: this.model, calendar: this, locale: locale}) }}
     </div>
+
+    {% if this.settingsUrl %}
+        {# Filled by the cal-ui-settings controller; Live never touches it. #}
+        <dialog class="cal-dialog" data-cal-ui-settings-target="dialog" data-live-ignore
+                aria-label="{{ 'ui_settings.title'|trans({}, domain, locale) }}">
+            <div class="cal-dialog__header">
+                <h2 class="cal-dialog__title">{{ 'ui_settings.title'|trans({}, domain, locale) }}</h2>
+                <button type="button" class="{{ cls['button.icon'] }}" data-action="cal-ui-settings#close"
+                        aria-label="{{ 'ui_settings.close'|trans({}, domain, locale) }}">&times;</button>
+            </div>
+            <div class="cal-dialog__body" data-cal-ui-settings-target="body"></div>
+        </dialog>
+    {% endif %}
 </div>

@@ -21,6 +21,7 @@ final readonly class CalendarOptions
                 // Open map: add your own names, or override a built-in's
                 // parameters key by key.
                 'variants' => [
+                    'year' => ['type' => 'year'],
                     'month' => ['type' => 'month'],
                     'listDay' => ['type' => 'list', 'range' => 'day'],
                     'listWeek' => ['type' => 'list', 'range' => 'week'],
@@ -36,7 +37,8 @@ final readonly class CalendarOptions
             ],
             // Zones of the toolbar. Space-separated groups of comma-separated
             // items: prev, next, today, title, views (one button per enabled
-            // variant), a variant name, or a key of `buttons`.
+            // variant), settings (the UI settings dialog, when enabled), a
+            // variant name, or a key of `buttons`.
             'toolbar' => [
                 'start' => 'prev,today,next',
                 'center' => 'title',
@@ -44,6 +46,9 @@ final readonly class CalendarOptions
             ],
             // Open map of custom toolbar buttons: key => [label, and url (+ frame) or event].
             'buttons' => [],
+            // Framework theme of the controls: default, bootstrap5, or one
+            // declared under fedale_calendar.themes.
+            'theme' => 'default',
             // ISO-8601 day numbers: 1 = Monday ... 7 = Sunday.
             'firstDay' => 1,
             'hiddenDays' => [],
@@ -95,7 +100,7 @@ final readonly class CalendarOptions
 
     private const NAME = '/^[A-Za-z][A-Za-z0-9_]*$/';
 
-    private const TOOLBAR_ITEMS = ['prev', 'next', 'today', 'title', 'views'];
+    private const TOOLBAR_ITEMS = ['prev', 'next', 'today', 'title', 'views', 'settings'];
 
     /**
      * @param list<string>                      $enabledViews    variant names
@@ -113,6 +118,7 @@ final readonly class CalendarOptions
         public array $variants,
         public array $toolbar,
         public array $buttons,
+        public string $theme,
         public int $firstDay,
         public array $hiddenDays,
         public bool $weekNumbers,
@@ -226,6 +232,7 @@ final readonly class CalendarOptions
             variants: $variants,
             toolbar: $toolbar,
             buttons: $buttons,
+            theme: \is_string($display['theme']) && $display['theme'] !== '' ? $display['theme'] : throw new \InvalidArgumentException('Calendar option "display.theme" must be a theme name.'),
             firstDay: $firstDay,
             hiddenDays: $hiddenDays,
             weekNumbers: (bool) $display['weekNumbers'],

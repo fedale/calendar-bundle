@@ -17,6 +17,7 @@ final class RoomCalendar extends AbstractCalendar
                     'default' => 'timelineDay',
                     'variants' => ['resourceTimeGridDay' => ['label' => 'Columns']],
                 ],
+                'theme' => 'bootstrap5',
                 'businessHours' => [['days' => [1, 2, 3, 4, 5, 6], 'start' => '08:00', 'end' => '20:00']],
                 'toolbar' => ['start' => 'add prev,today,next', 'center' => 'title', 'end' => 'views'],
                 'buttons' => ['add' => ['label' => 'Add event', 'event' => 'rooms:add']],

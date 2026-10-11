@@ -1,0 +1,91 @@
+toolbar:
+    previous: Précédent
+    next: Suivant
+    today: "Aujourd'hui"
+    views: Vues
+view:
+    month: Mois
+    week: Semaine
+    day: Jour
+    year: Année
+    list: Liste
+    listDay: 'Liste du jour'
+    listWeek: 'Liste de la semaine'
+    listMonth: 'Liste'
+    timelineDay: 'Jour'
+    timelineWeek: 'Semaine'
+    timelineMonth: 'Mois'
+    timeGridDay: 'Jour'
+    timeGridWeek: 'Semaine'
+    resourceTimeGridDay: 'Jour'
+    resourceTimeGridWeek: 'Semaine'
+    timeline: Chronologie
+    resources: Ressources
+event:
+    busy: Occupé
+    delete: 'Supprimer %title%'
+    confirm_delete: 'Supprimer cet événement ?'
+    keyboard_move: 'Les flèches le déplacent, Maj avec les flèches modifie sa fin, Suppr le supprime.'
+    keyboard_other: "Entrée l'ouvre, Suppr le supprime."
+month:
+    week: Semaine
+    more: '+%count% de plus'
+    more_label: 'Afficher tous les événements du %date%'
+list:
+    empty: Aucun événement sur cette période.
+    all_day: Toute la journée
+    from: 'à partir de %time%'
+    until: "jusqu'à %time%"
+resources:
+    label: Ressources
+timeline:
+    week: 'S %number%'
+    collapse: 'Replier %name%'
+    expand: 'Déplier %name%'
+time_grid:
+    all_day: 'Journée'
+intent:
+    not_allowed: "Cette action n'est pas autorisée."
+    read_only: 'Ce calendrier ne peut pas être modifié.'
+    gone: "Cet événement n'existe plus. Le calendrier affiche l'état actuel."
+    stale: "Cet événement a été modifié entre-temps. Le calendrier affiche l'état actuel ; réessayez."
+    invalid: "L'horaire demandé n'est pas valide."
+ui_settings:
+    open: 'Réglages du calendrier'
+    title: 'Réglages du calendrier'
+    close: 'Fermer'
+    save: 'Enregistrer'
+    saved: 'Réglages enregistrés.'
+    scope: 'Appliquer à'
+    scope_global: 'Tous les calendriers'
+    scope_global_help: 'Valeurs pour tous les calendriers. Chaque calendrier peut les remplacer.'
+    scope_calendar_help: 'Valeurs pour ce calendrier uniquement ; les champs vides héritent.'
+    empty: 'Rien à régler ici.'
+    inherit_code: 'Selon la configuration'
+    inherit_value: 'Hériter (%value%)'
+    default_view:
+        label: 'Vue par défaut'
+    first_day:
+        label: 'Premier jour de la semaine'
+        monday: 'Lundi'
+        saturday: 'Samedi'
+        sunday: 'Dimanche'
+    weekends:
+        label: 'Week-ends'
+        show: 'Afficher'
+        hide: 'Masquer'
+    time_format:
+        label: "Format de l'heure"
+        24h: '24 heures (14:30)'
+        12h: '12 heures (2:30 PM)'
+    week_numbers:
+        label: 'Numéros de semaine'
+        show: 'Afficher'
+        hide: 'Masquer'
+    slot_minutes:
+        label: 'Créneaux horaires'
+        15: '15 minutes'
+        30: '30 minutes'
+        60: '1 heure'
+year:
+    events: '{0} Aucun événement|{1} 1 événement|]1,Inf[ %count% événements'

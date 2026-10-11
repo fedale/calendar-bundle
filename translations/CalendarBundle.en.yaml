@@ -25,6 +25,8 @@ event:
     busy: Busy
     delete: 'Delete %title%'
     confirm_delete: 'Delete this event?'
+    keyboard_move: 'Arrow keys move it, Shift with arrow keys changes its end, Delete removes it.'
+    keyboard_other: 'Enter opens it, Delete removes it.'
 month:
     week: Week
     more: '+%count% more'
@@ -48,3 +50,42 @@ intent:
     gone: 'This event no longer exists. The calendar shows the current state.'
     stale: 'This event was changed meanwhile. The calendar shows the current state; try again.'
     invalid: 'The requested time is not valid.'
+ui_settings:
+    open: 'Calendar settings'
+    title: 'Calendar settings'
+    close: 'Close'
+    save: 'Save'
+    saved: 'Settings saved.'
+    scope: 'Apply to'
+    scope_global: 'Every calendar'
+    scope_global_help: 'Values for every calendar. A calendar can override them.'
+    scope_calendar_help: 'Values for this calendar only; empty fields inherit.'
+    empty: 'Nothing to set here.'
+    inherit_code: 'As configured'
+    inherit_value: 'Inherit (%value%)'
+    default_view:
+        label: 'Default view'
+    first_day:
+        label: 'First day of the week'
+        monday: 'Monday'
+        saturday: 'Saturday'
+        sunday: 'Sunday'
+    weekends:
+        label: 'Weekends'
+        show: 'Show'
+        hide: 'Hide'
+    time_format:
+        label: 'Time format'
+        24h: '24-hour (14:30)'
+        12h: '12-hour (2:30 PM)'
+    week_numbers:
+        label: 'Week numbers'
+        show: 'Show'
+        hide: 'Hide'
+    slot_minutes:
+        label: 'Time slots'
+        15: '15 minutes'
+        30: '30 minutes'
+        60: '1 hour'
+year:
+    events: '{0} No events|{1} 1 event|]1,Inf[ %count% events'

@@ -2,7 +2,7 @@
 
 > **A server-rendered calendar for Symfony UX that knows nothing about your domain.**
 
-Calendar Bundle renders month, list, day and week (time grid), resource timeline and resource
+Calendar Bundle renders year, month, list, day and week (time grid), resource timeline and resource
 column views of time-based data: work shifts, seat bookings, room schedules, lessons, anything with
 a start and an end. It is a **presentation component**: your application keeps the domain, the
 rules and the data, and hands the calendar a read-only view of them.
@@ -13,8 +13,8 @@ rules and the data, and hands the calendar a read-only view of them.
   `EventSourceInterface`). There is no universal `Appointment` entity to adopt.
 - **CSS-framework agnostic.** Its own `cal-*` classes, styled through `--cal-*` custom properties.
 
-> **Status:** early development (0.1). Views and interaction (selecting, moving, resizing,
-> deleting) are in place. The roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
+> **Status:** early development (0.1). Views, interaction, end-user settings, themes and
+> keyboard access are in place. The roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
 
 ---
 
@@ -74,9 +74,10 @@ import '@fedale/calendar-bundle/styles/calendar.css';
 Alternatively, link it from your layout:
 `<link rel="stylesheet" href="{{ asset('@fedale/calendar-bundle/styles/calendar.css') }}">`.
 
-The bundle ships three Stimulus controllers: `cal-interact` (drag, resize, select, click and delete,
-see "Interaction"), `cal-now` (scrolls the timeline and the time grid to "now" and keeps the "now"
-line moving) and `cal-button` (custom toolbar buttons that dispatch a DOM event).
+The bundle ships four Stimulus controllers: `cal-interact` (drag, resize, select, click, delete and
+their keyboard equivalents, see "Interaction"), `cal-ui-settings` (the settings dialog, see "End-user
+settings"), `cal-now` (scrolls the timeline and the time grid to "now" and keeps the "now" line
+moving) and `cal-button` (custom toolbar buttons that dispatch a DOM event).
 Flex registers them in `assets/controllers.json`; without Flex, add them yourself:
 
 ```json
@@ -84,6 +85,7 @@ Flex registers them in `assets/controllers.json`; without Flex, add them yoursel
     "controllers": {
         "@fedale/calendar-bundle": {
             "interact": { "enabled": true, "fetch": "eager" },
+            "ui-settings": { "enabled": true, "fetch": "lazy" },
             "now": { "enabled": true, "fetch": "lazy" },
             "button": { "enabled": true, "fetch": "lazy" }
         }
@@ -239,6 +241,7 @@ Options form a tree. The bundle defaults, with every accepted key:
             'enabled' => ['month', 'listMonth'],   // variant names, in toolbar order
             'default' => 'month',
             'variants' => [                        // see "Views"
+                'year' => ['type' => 'year'],
                 'month' => ['type' => 'month'],
                 'listDay' => ['type' => 'list', 'range' => 'day'],
                 'listWeek' => ['type' => 'list', 'range' => 'week'],
@@ -258,6 +261,7 @@ Options form a tree. The bundle defaults, with every accepted key:
             'end' => 'views',
         ],
         'buttons' => [],                // custom toolbar buttons, see "Toolbar"
+        'theme' => 'default',           // see "Themes"
         'firstDay' => 1,                // ISO-8601: 1 = Monday ... 7 = Sunday
         'hiddenDays' => [],             // ISO-8601 day numbers, e.g. [6, 7]
         'weekNumbers' => false,
@@ -350,6 +354,7 @@ and the URL use variant names, so one type serves several durations, as `timelin
 
 | Type | Parameters | What it shows |
 |---|---|---|
+| `year` | none | Twelve mini months; each day is shaded by how busy it is (0 to 4, relative to the busiest day of the year) and opens in the calendar's most detailed day view (time grid, list or timeline of a day, else the month) |
 | `month` | none | Whole weeks around the month. Multi-day events are continuous bars. A day with more events than `dayMaxEvents` shows "+N more", which opens the full list in a popover (native `popover`, no JavaScript) |
 | `list` | `range`: `day`, `week` or `month` | An agenda of the days that have events. Multi-day events are listed on every day they cover |
 | `timeline` | `range`: `day`, `week` or `month`; `slotMinutes`: a divisor of 1440; `dayStart` / `dayEnd`: the window of each day (HH:MM, `24:00` allowed as end); `scrollTime`: where the view opens when "now" is off screen (default `08:00`) | Resources down the side, time across (see "Timeline") |
@@ -450,6 +455,7 @@ separated by spaces; items in a group are separated by commas and drawn as one j
 | Item | What it is |
 |---|---|
 | `prev`, `next`, `today` | Navigation |
+| `settings` | A gear opening the end-user settings dialog (only when they are enabled, see "End-user settings") |
 | `title` | The period heading |
 | `views` | One button per enabled variant (nothing when only one is enabled) |
 | a variant name | That variant's button alone |
@@ -545,10 +551,95 @@ on screen any more, an interaction the event does not enable, a version that cha
 was rendered, an end before the start. These checks stop stale or forged requests early; they do
 not replace your domain's own checks, which are the authority.
 
+Everything works from the keyboard too. On a focused event, the arrow keys move it, Shift with the
+arrow keys moves its end, Delete removes it and Enter activates it. Steps follow the view: a slot
+(`snapMinutes`) on a time axis, a day on day columns (a week with up and down), and in a timeline
+up and down move the event to the previous or next resource row. Focus stays on the event after the
+calendar re-renders, and interactive events describe these keys to assistive technology
+(`aria-description`).
+
 In the browser, the `cal-interact` controller dispatches a cancelable `cal:intent` DOM event
 before each call, with the action and its arguments as detail: call `preventDefault()` to stop it
 (for example, to ask for confirmation first). An `openUrl()` answer arrives as a `cal:open` event,
 which the controller handles by loading the URL into the named Turbo Frame, or visiting it.
+
+---
+
+## End-user settings
+
+With [fedale/setting-bundle](https://github.com/fedale/setting-bundle) 1.1+ and `symfony/form`, end
+users can change some options at runtime, for every calendar or for one calendar (which wins), from
+a dialog opened by the `settings` toolbar item:
+
+| Setting | What it changes | Offered for |
+|---|---|---|
+| Default view | `display.views.default` | calendars with more than one view |
+| First day of the week | `display.firstDay` | every calendar |
+| Weekends | Saturday and Sunday in `display.hiddenDays`, other hidden days kept | every calendar |
+| Time format | `display.timeFormat` | every calendar |
+| Week numbers | `display.weekNumbers` | calendars with a month view |
+| Time slots | `slotMinutes` of every time-grid variant | calendars with a time grid |
+
+They apply after `viewConfig()` and before the URL, and only where they fit: a default view a
+calendar does not enable, or a slot length its day window cannot hold, is skipped for that calendar.
+Values are stored by setting-bundle under the `calendar.ui` namespace, scopes `global` and
+`calendar:<id>`, current tenant first.
+
+To enable them, configure a scoped store in setting-bundle, import the dialog's route, and add the
+item to the toolbar:
+
+```yaml
+# config/packages/fedale_setting.yaml
+fedale_setting:
+    scoped:
+        store: doctrine     # or the id of your ScopedStoreInterface service
+
+# config/routes/fedale_calendar.yaml
+fedale_calendar_ui_settings:
+    resource: '@FedaleCalendarBundle/src/Controller/UiSettingsController.php'
+    type: attribute
+    prefix: /calendar/_settings
+
+# config/packages/fedale_calendar.yaml
+fedale_calendar:
+    defaults:
+        display:
+            toolbar:
+                end: 'views settings'
+```
+
+Without setting-bundle, its store, or the route, calendars render as configured in code and the
+gear is not shown. Protect the route like any other administrative page if not every user should
+change the settings (`access_control` on its path).
+
+A new setting is one class: implement `UiSettingInterface` (or extend `AbstractUiSetting`, which
+writes one option path) and register it as a service; setting-bundle picks it up.
+
+---
+
+## Themes
+
+The toolbar's controls take their classes from a theme. `default` uses the bundle's own `cal-btn`
+styles; `bootstrap5` maps them to Bootstrap (`btn btn-outline-secondary`, `btn-group`, ...). Pick one
+per calendar or for all with `display.theme`, or declare your own:
+
+```yaml
+fedale_calendar:
+    defaults:
+        display:
+            theme: brand
+    themes:
+        brand:
+            extends: bootstrap5
+            classes:
+                button.primary: 'btn btn-success'
+```
+
+Class keys: `button`, `button.primary`, `button.icon`, `button.active` (added to the view on
+screen) and `button.group` (joined groups). Themes only dress the controls: the calendar's layout
+always comes from its own stylesheet.
+
+---
 
 ### Adding a view
 
@@ -602,7 +693,8 @@ of the dark palette.
 
 ## Translations
 
-System strings live in the `CalendarBundle` translation domain, in English and Italian. Dates are
+System strings live in the `CalendarBundle` translation domain, in English, Italian, French, German
+and Spanish. Dates are
 formatted with ICU skeletons, so month and day names, their order and the time format follow the
 locale.
 

@@ -1,0 +1,91 @@
+toolbar:
+    previous: Anterior
+    next: Siguiente
+    today: Hoy
+    views: Vistas
+view:
+    month: Mes
+    week: Semana
+    day: Día
+    year: Año
+    list: Lista
+    listDay: 'Lista del día'
+    listWeek: 'Lista de la semana'
+    listMonth: 'Lista'
+    timelineDay: 'Día'
+    timelineWeek: 'Semana'
+    timelineMonth: 'Mes'
+    timeGridDay: 'Día'
+    timeGridWeek: 'Semana'
+    resourceTimeGridDay: 'Día'
+    resourceTimeGridWeek: 'Semana'
+    timeline: Cronología
+    resources: Recursos
+event:
+    busy: Ocupado
+    delete: 'Eliminar %title%'
+    confirm_delete: '¿Eliminar este evento?'
+    keyboard_move: 'Las flechas lo mueven, Mayús con las flechas cambia su final, Supr lo elimina.'
+    keyboard_other: 'Intro lo abre, Supr lo elimina.'
+month:
+    week: Semana
+    more: '+%count% más'
+    more_label: 'Mostrar todos los eventos del %date%'
+list:
+    empty: No hay eventos en este periodo.
+    all_day: Todo el día
+    from: 'desde las %time%'
+    until: 'hasta las %time%'
+resources:
+    label: Recursos
+timeline:
+    week: 'S %number%'
+    collapse: 'Contraer %name%'
+    expand: 'Expandir %name%'
+time_grid:
+    all_day: 'Todo el día'
+intent:
+    not_allowed: 'Esta acción no está permitida.'
+    read_only: 'Este calendario no se puede modificar.'
+    gone: 'Este evento ya no existe. El calendario muestra el estado actual.'
+    stale: 'Este evento se modificó mientras tanto. El calendario muestra el estado actual; inténtalo de nuevo.'
+    invalid: 'La hora solicitada no es válida.'
+ui_settings:
+    open: 'Ajustes del calendario'
+    title: 'Ajustes del calendario'
+    close: 'Cerrar'
+    save: 'Guardar'
+    saved: 'Ajustes guardados.'
+    scope: 'Aplicar a'
+    scope_global: 'Todos los calendarios'
+    scope_global_help: 'Valores para todos los calendarios. Cada calendario puede sobrescribirlos.'
+    scope_calendar_help: 'Valores solo para este calendario; los campos vacíos se heredan.'
+    empty: 'No hay nada que ajustar aquí.'
+    inherit_code: 'Según la configuración'
+    inherit_value: 'Heredar (%value%)'
+    default_view:
+        label: 'Vista predeterminada'
+    first_day:
+        label: 'Primer día de la semana'
+        monday: 'Lunes'
+        saturday: 'Sábado'
+        sunday: 'Domingo'
+    weekends:
+        label: 'Fines de semana'
+        show: 'Mostrar'
+        hide: 'Ocultar'
+    time_format:
+        label: 'Formato de hora'
+        24h: '24 horas (14:30)'
+        12h: '12 horas (2:30 PM)'
+    week_numbers:
+        label: 'Números de semana'
+        show: 'Mostrar'
+        hide: 'Ocultar'
+    slot_minutes:
+        label: 'Intervalos de tiempo'
+        15: '15 minutos'
+        30: '30 minutos'
+        60: '1 hora'
+year:
+    events: '{0} Sin eventos|{1} 1 evento|]1,Inf[ %count% eventos'

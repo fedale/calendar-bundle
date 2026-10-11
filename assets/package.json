@@ -20,6 +20,12 @@
         "name": "cal-interact",
         "fetch": "eager",
         "enabled": true
+      },
+      "ui-settings": {
+        "main": "controllers/cal-ui-settings_controller.js",
+        "name": "cal-ui-settings",
+        "fetch": "lazy",
+        "enabled": true
       }
     },
     "importmap": {

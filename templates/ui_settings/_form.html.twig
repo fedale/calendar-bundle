@@ -1,0 +1,43 @@
+{#
+  Body of the UI settings dialog (see UiSettingsController): a scope picker,
+  then the form of that scope. The cal-ui-settings controller loads it, swaps
+  it on scope changes and submits it; a `data-cal-ui-settings-saved` element
+  tells it the save went through, so it re-renders the calendars on the page.
+#}
+{% set domain = 'CalendarBundle' %}
+<div class="cal-settings">
+    <div class="cal-settings__scope">
+        <label for="cal-settings-scope">{{ 'ui_settings.scope'|trans({}, domain) }}</label>
+        <select id="cal-settings-scope" name="scope" data-action="cal-ui-settings#switchScope">
+            {% for value, label in scopes %}
+                <option value="{{ value }}"{{ value == scope ? ' selected' }}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <p class="cal-settings__hint">
+            {{ (calendar is null ? 'ui_settings.scope_global_help' : 'ui_settings.scope_calendar_help')|trans({}, domain) }}
+        </p>
+    </div>
+
+    {% if saved %}
+        <p class="cal-notice cal-notice--success" role="status" data-cal-ui-settings-saved>{{ 'ui_settings.saved'|trans({}, domain) }}</p>
+    {% endif %}
+
+    {% if has_settings %}
+        {{ form_start(form, {attr: {'data-action': 'submit->cal-ui-settings#submit', class: 'cal-settings__form'}}) }}
+            {% for field in form %}
+                <div class="cal-settings__field">
+                    {{ form_label(field) }}
+                    {{ form_widget(field) }}
+                    {{ form_help(field) }}
+                    {{ form_errors(field) }}
+                </div>
+            {% endfor %}
+            <div class="cal-settings__actions">
+                <button type="button" class="cal-btn" data-action="cal-ui-settings#close">{{ 'ui_settings.close'|trans({}, domain) }}</button>
+                <button type="submit" class="cal-btn cal-btn--primary">{{ 'ui_settings.save'|trans({}, domain) }}</button>
+            </div>
+        {{ form_end(form) }}
+    {% else %}
+        <p class="cal-settings__empty">{{ 'ui_settings.empty'|trans({}, domain) }}</p>
+    {% endif %}
+</div>

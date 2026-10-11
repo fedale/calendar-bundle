@@ -20,11 +20,15 @@ use Fedale\CalendarBundle\Options\CalendarOptionsResolver;
 use Fedale\CalendarBundle\Options\ToolbarButton;
 use Fedale\CalendarBundle\Source\EventCollector;
 use Fedale\CalendarBundle\Source\ResourceCollector;
+use Fedale\CalendarBundle\Theme\ThemeRegistry;
 use Fedale\CalendarBundle\Time\DateFormatter;
 use Fedale\CalendarBundle\Time\Days;
+use Fedale\CalendarBundle\UiSettings\UiSettingsResolver;
 use Fedale\CalendarBundle\View\ViewContext;
 use Fedale\CalendarBundle\View\ViewRegistry;
 use Psr\Clock\ClockInterface;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\UX\LiveComponent\Attribute\AsLiveComponent;
 use Symfony\UX\LiveComponent\Attribute\LiveAction;
 use Symfony\UX\LiveComponent\Attribute\LiveArg;
@@ -88,6 +92,9 @@ final class Calendar
         private readonly TimezoneResolverInterface $timezoneResolver,
         private readonly ClockInterface $clock,
         private readonly IntentDispatcher $intents,
+        private readonly ?UiSettingsResolver $uiSettings = null,
+        private readonly ?UrlGeneratorInterface $urlGenerator = null,
+        private readonly ThemeRegistry $themes = new ThemeRegistry(),
     ) {
     }
 
@@ -116,6 +123,16 @@ final class Calendar
         if (\in_array($view, $options->enabledViews, true)) {
             // The default view stays out of the URL.
             $this->view = $view === $options->defaultView ? null : $view;
+        }
+    }
+
+    /** Opens a given day, in a given view if enabled (the year view's days). */
+    #[LiveAction]
+    public function goTo(#[LiveArg] string $date, #[LiveArg] string $view = ''): void
+    {
+        $this->date = $date;
+        if ($view !== '') {
+            $this->changeView($view);
         }
     }
 
@@ -259,6 +276,10 @@ final class Calendar
                                 $items[] = ['type' => 'view', 'name' => $name, 'label' => $options->variant($name)->label];
                             }
                         }
+                    } elseif ($item === 'settings') {
+                        if ($this->getSettingsUrl() !== null) {
+                            $items[] = ['type' => 'settings'];
+                        }
                     } elseif (isset($options->buttons[$item])) {
                         $items[] = ['type' => 'button', 'button' => $options->buttons[$item]];
                     } elseif (isset($options->variants[$item])) {
@@ -277,6 +298,22 @@ final class Calendar
     }
 
     /**
+     * Where the settings dialog loads its form for this calendar; null while
+     * the UI settings are off or their route is not imported.
+     */
+    public function getSettingsUrl(): ?string
+    {
+        if ($this->uiSettings === null || $this->urlGenerator === null || !$this->uiSettings->isEnabled()) {
+            return null;
+        }
+        try {
+            return $this->urlGenerator->generate('fedale_calendar_ui_settings', ['scope' => $this->calendar]);
+        } catch (RouteNotFoundException) {
+            return null;
+        }
+    }
+
+    /**
      * Step of drags and selections in minutes for the active view: whole days
      * where the view has no time axis (month, list, day-wide timeline slots).
      */
@@ -288,6 +325,16 @@ final class Calendar
         return \in_array($variant->type, ['timeline', 'timeGrid'], true) && !$daySlots
             ? $this->getOptions()->snapMinutes
             : 1440;
+    }
+
+    /**
+     * The classes of the controls in the calendar's theme, by class key.
+     *
+     * @return array<string, string>
+     */
+    public function getCls(): array
+    {
+        return $this->themes->classes($this->getOptions()->theme);
     }
 
     /** ICU skeleton for event times, from the `timeFormat` option. */

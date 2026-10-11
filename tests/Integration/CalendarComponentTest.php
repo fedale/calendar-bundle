@@ -74,7 +74,7 @@ final class CalendarComponentTest extends KernelTestCase
 
     public function testFallsBackOnStaleOrForgedUrlState(): void
     {
-        $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'year', 'date' => '2026-02-31'])->render()->crawler();
+        $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'agenda', 'date' => '2026-02-31'])->render()->crawler();
 
         self::assertSame('ottobre 2026', $crawler->filter('.cal-toolbar__title')->text());
         self::assertCount(1, $crawler->filter('.cal-month'));
@@ -93,6 +93,33 @@ final class CalendarComponentTest extends KernelTestCase
         self::assertStringContainsString('--cal-top: 37.5%; --cal-height: 1.0417%;', (string) $standup->attr('style'));
         // The three-day trip is a bar in the all-day row, Wednesday to Friday.
         self::assertStringContainsString('--cal-start: 3; --cal-span: 3;', (string) $crawler->filter('.cal-tg__all-day-content [data-cal-event="demo-trip"]')->attr('style'));
+    }
+
+    public function testYearViewOpensADayInTheDayView(): void
+    {
+        $component = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'year']);
+        $crawler = $component->render()->crawler();
+
+        self::assertSame('2026', $crawler->filter('.cal-toolbar__title')->text());
+        self::assertCount(12, $crawler->filter('.cal-year__month'));
+        // The trip covers the 14th to the 16th; other October days have one event at most.
+        $day = $crawler->filter('[data-live-date-param="2026-10-14"]');
+        self::assertStringContainsString('cal-year__day--level-4', (string) $day->attr('class'));
+        // No day view enabled: days open in the month.
+        self::assertSame('month', $day->attr('data-live-view-param'));
+
+        $component->call('goTo', ['date' => '2026-10-14', 'view' => 'month']);
+        self::assertSame(['2026-10-14', null], [$component->component()->date, $component->component()->view]);
+    }
+
+    public function testAThemeDressesTheControls(): void
+    {
+        $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'rooms'])->render()->crawler();
+
+        self::assertSame('btn btn-outline-secondary', $crawler->filter('[data-live-action-param="today"]')->attr('class'));
+        self::assertSame('btn btn-outline-secondary active', $crawler->filter('[data-live-view-param="timelineDay"]')->attr('class'));
+        self::assertSame('btn btn-primary', $crawler->filter('[data-controller="cal-button"]')->attr('class'));
+        self::assertStringContainsString('btn-group', (string) $crawler->filter('.cal-toolbar__zone--end .cal-toolbar__group')->attr('class'));
     }
 
     public function testListViewDescribesMultiDayEvents(): void

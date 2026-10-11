@@ -1,0 +1,35 @@
+{# Year view: twelve mini months. A day's shade is its density (0-4); a day
+   is a button opening it in the calendar's day view, when there is one. #}
+{% set domain = 'CalendarBundle' %}
+<div class="cal-year">
+    {% for month in model.months %}
+        <section class="cal-year__month" aria-labelledby="cal-{{ calendar.calendar }}-y{{ loop.index }}">
+            <h3 class="cal-year__title" id="cal-{{ calendar.calendar }}-y{{ loop.index }}">{{ cal_format(month.start, 'LLLL', locale) }}</h3>
+            <div class="cal-year__grid" style="--cal-cols: {{ model.weekdays|length }}">
+                {% for weekday in model.weekdays %}
+                    <abbr class="cal-year__weekday" title="{{ cal_format(weekday, 'EEEE', locale) }}">{{ cal_format(weekday, 'EEEEE', locale) }}</abbr>
+                {% endfor %}
+                {% for week in month.weeks %}
+                    {% for day in week %}
+                        {% if not day.inMonth %}
+                            <span class="cal-year__day cal-year__day--outside" aria-hidden="true"></span>
+                        {% else %}
+                            {% set label = cal_format(day.date, 'EEEEdMMMM', locale) ~ ' — ' ~ 'year.events'|trans({'%count%': day.count}, domain, locale) %}
+                            {% set classes = 'cal-year__day cal-year__day--level-' ~ day.level ~ (day.isToday ? ' cal-year__day--today') %}
+                            {% if model.dayView %}
+                                <button type="button" class="{{ classes }}" title="{{ label }}" aria-label="{{ label }}"
+                                        {{ day.isToday ? 'aria-current="date"' }}
+                                        data-action="live#action" data-live-action-param="goTo"
+                                        data-live-date-param="{{ day.date.format('Y-m-d') }}" data-live-view-param="{{ model.dayView }}">
+                                    {{- day.date.format('j') -}}
+                                </button>
+                            {% else %}
+                                <span class="{{ classes }}" title="{{ label }}">{{ day.date.format('j') }}</span>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endfor %}
+</div>
