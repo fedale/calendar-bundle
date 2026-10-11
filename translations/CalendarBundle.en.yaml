@@ -15,6 +15,10 @@ view:
     timelineDay: 'Day'
     timelineWeek: 'Week'
     timelineMonth: 'Month'
+    timeGridDay: 'Day'
+    timeGridWeek: 'Week'
+    resourceTimeGridDay: 'Day'
+    resourceTimeGridWeek: 'Week'
     timeline: Timeline
     resources: Resources
 event:
@@ -34,3 +38,5 @@ timeline:
     week: 'W %number%'
     collapse: 'Collapse %name%'
     expand: 'Expand %name%'
+time_grid:
+    all_day: 'All day'

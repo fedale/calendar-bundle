@@ -7,10 +7,11 @@
 {% set time_skeleton = calendar.timeSkeleton %}
 <div class="cal-timeline"
      style="--cal-slots: {{ model.slots|length }}; --cal-area-width: {{ model.areaWidth }}; --cal-area-cols: {{ model.columns|length }};"
-     data-controller="cal-timeline"
-     data-cal-timeline-windows-value="{{ model.windows|json_encode }}"
-     data-cal-timeline-scroll-value="{{ model.scrollTo }}">
-    <div class="cal-timeline__scroller" data-cal-timeline-target="scroller">
+     data-controller="cal-now"
+     data-cal-now-windows-value="{{ model.windows|json_encode }}"
+     data-cal-now-scroll-value="{{ model.scrollTo }}"
+     data-cal-now-axis-value="x">
+    <div class="cal-timeline__scroller" data-cal-now-target="scroller">
         <div class="cal-tl-head">
             <div class="cal-tl-area cal-tl-area--head">
                 <div class="cal-tl-area__label">{{ model.areaLabel ? model.areaLabel|trans({}, null, locale) : 'resources.label'|trans({}, domain, locale) }}</div>
@@ -20,7 +21,7 @@
                     {% endfor %}
                 </div>
             </div>
-            <div class="cal-tl-track cal-tl-track--head" data-cal-timeline-target="track">
+            <div class="cal-tl-track cal-tl-track--head" data-cal-now-target="track">
                 <div class="cal-tl-head__groups">
                     {% for group in model.groups %}
                         <div class="cal-tl-head__group" style="--cal-left: {{ cal_pct(group.left) }}; --cal-width: {{ cal_pct(group.width) }};">
@@ -50,6 +51,9 @@
 
         <div class="cal-tl-body">
             <div class="cal-tl-overlay" aria-hidden="true">
+                {% for closed in model.closed %}
+                    <div class="cal-nonbusiness cal-tl-band" style="--cal-left: {{ cal_pct(closed[0]) }}; --cal-width: {{ cal_pct(closed[1]) }};"></div>
+                {% endfor %}
                 {% for band in model.bands %}
                     {% set color = cal_color(band.item.event.style.color) %}
                     <div class="cal-band cal-tl-band{{ band.item.event.style.cssClass ? ' ' ~ band.item.event.style.cssClass }}"
@@ -57,7 +61,7 @@
                          title="{{ band.item.title }}"></div>
                 {% endfor %}
                 {% if model.now is not null %}
-                    <div class="cal-tl-now" style="--cal-left: {{ cal_pct(model.now) }};" data-cal-timeline-target="now"></div>
+                    <div class="cal-tl-now" style="--cal-left: {{ cal_pct(model.now) }};" data-cal-now-target="now"></div>
                 {% endif %}
             </div>
 

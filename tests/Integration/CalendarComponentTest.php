@@ -80,6 +80,21 @@ final class CalendarComponentTest extends KernelTestCase
         self::assertCount(1, $crawler->filter('.cal-month'));
     }
 
+    public function testTimeGridWeekPlacesTimedAndAllDayEvents(): void
+    {
+        $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'timeGridWeek', 'date' => '2026-10-14'])->render()->crawler();
+
+        self::assertSame('12 ott – 18 ott 2026', $crawler->filter('.cal-toolbar__title')->text());
+        self::assertCount(7, $crawler->filter('.cal-tg__day'));
+        // One label per full hour, the midnight at the top left out: 01:00 to 23:00.
+        self::assertCount(23, $crawler->filter('.cal-tg__labels .cal-tg__label'));
+        // Stand-up, Monday 09:00-09:15, in the first column.
+        $standup = $crawler->filter('.cal-tg__col')->eq(0)->filter('[data-cal-event="demo-standup"]');
+        self::assertStringContainsString('--cal-top: 37.5%; --cal-height: 1.0417%;', (string) $standup->attr('style'));
+        // The three-day trip is a bar in the all-day row, Wednesday to Friday.
+        self::assertStringContainsString('--cal-start: 3; --cal-span: 3;', (string) $crawler->filter('.cal-tg__all-day-content [data-cal-event="demo-trip"]')->attr('style'));
+    }
+
     public function testListViewDescribesMultiDayEvents(): void
     {
         $crawler = $this->createLiveComponent('Fedale:Calendar', ['calendar' => 'demo', 'view' => 'listMonth'])->render()->crawler();

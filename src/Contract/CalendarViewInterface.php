@@ -25,8 +25,8 @@ interface CalendarViewInterface
     /** Rejects parameters this view does not understand or accept, naming the variant. */
     public function validateVariant(ViewVariant $variant): void;
 
-    /** Whether build() needs the resources; they are only fetched when it does. */
-    public function usesResources(): bool;
+    /** Whether build() needs the resources for this variant; they are only fetched when it does. */
+    public function usesResources(ViewVariant $variant): bool;
 
     /** The range to fetch and render around the focused date. */
     public function range(ViewContext $context): DateRange;
@@ -39,7 +39,7 @@ interface CalendarViewInterface
 
     /**
      * @param list<CalendarItem>     $items     the events overlapping {@see range()}, sorted
-     * @param list<CalendarResource> $resources empty unless {@see usesResources()}
+     * @param list<CalendarResource> $resources empty unless {@see usesResources()} says otherwise
      */
     public function build(ViewContext $context, array $items, array $resources = []): object;
 

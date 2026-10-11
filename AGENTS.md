@@ -49,18 +49,19 @@ hands it.
 | `src/Contract/` | Every public interface: sources, definitions, views, timezone resolver |
 | `src/Attribute/` | `#[AsCalendar]`, `#[AsCalendarSource]`, `#[AsCalendarView]`: they carry the id/key/name the registries index by |
 | `src/Definition/` | `AbstractCalendar`, `CalendarRegistry` |
-| `src/Options/` | `CalendarOptions` (**the** list of accepted keys, with defaults and validation), `OptionsMerger`, `CalendarOptionsResolver` (precedence), and the value objects it builds: `ViewVariant`, `ViewRange`, `ToolbarButton`, `ResourceColumn` |
+| `src/Options/` | `CalendarOptions` (**the** list of accepted keys, with defaults and validation), `OptionsMerger`, `CalendarOptionsResolver` (precedence), and the value objects it builds: `ViewVariant`, `ViewRange`, `ToolbarButton`, `ResourceColumn`, `BusinessHours` |
 | `src/Source/` | `SourceRegistry`, `EventCollector` (fetch, filter, convert, sort), `ResourceCollector`, `CalendarItem` (an event as the views see it) |
-| `src/View/` | One class per view type (`MonthView`, `ListView`, `TimelineView`), `ViewContext`, `ViewRegistry` |
+| `src/View/` | One class per view type (`MonthView`, `ListView`, `TimelineView`, `TimeGridView`), `ViewContext`, `ViewRegistry`, and helpers shared by views: `ResourceTree` (sorting and nesting), `WindowParams` (slot and day-window parameters) |
 | `src/View/Layout/` | The month's row layout (`WeekRowLayout`) |
-| `src/View/Timeline/` | The timeline's engines and models: `TimeAxis` (instants to fractions of the axis), `LaneLayout` (stacking and "+N more"), rows and segments |
+| `src/View/Timeline/` | The timeline's engines and models: `TimeAxis` (instants to fractions of the axis, also used by the time grid), `LaneLayout` (stacking and "+N more"), rows and segments |
+| `src/View/TimeGrid/` | The time grid's engine and models: `ColumnLayout` (side-by-side placement of overlapping events), columns and events |
 | `src/View/Model/` | The view models the templates render |
 | `src/Time/` | `Days` (DST-safe day arithmetic), `DateFormatter` (ICU skeletons), the default timezone resolver |
 | `src/Twig/` | The `Fedale:Calendar` Live Component and the Twig extension (`cal_format`, `cal_color`) |
 | `templates/components/` | The component shell (toolbar + active view) |
 | `templates/view/` | One template per view, plus `_event.html.twig` |
 | `assets/styles/calendar.css` | The stylesheet, exposed to AssetMapper as `@fedale/calendar-bundle` |
-| `assets/controllers/` | Stimulus controllers (`cal-timeline`, `cal-button`), declared in `assets/package.json` |
+| `assets/controllers/` | Stimulus controllers (`cal-now`, `cal-button`), declared in `assets/package.json` |
 | `translations/` | `CalendarBundle.{en,it}.yaml`, the system domain |
 | `config/services.yaml` | Service wiring |
 | `tests/Integration/` | A minimal kernel (`TestKernel`) and fixtures to render the real component |

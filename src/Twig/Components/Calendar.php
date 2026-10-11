@@ -170,7 +170,7 @@ final class Calendar
             $this->models[$key] = $view->build(
                 $context,
                 $this->collector->collect($context->options, $query),
-                $view->usesResources() ? $this->resourceCollector->collect($context->options, $query) : [],
+                $view->usesResources($context->variant) ? $this->resourceCollector->collect($context->options, $query) : [],
             );
         }
 

@@ -28,6 +28,10 @@ final readonly class CalendarOptions
                     'timelineDay' => ['type' => 'timeline', 'range' => 'day', 'slotMinutes' => 60],
                     'timelineWeek' => ['type' => 'timeline', 'range' => 'week', 'slotMinutes' => 360],
                     'timelineMonth' => ['type' => 'timeline', 'range' => 'month', 'slotMinutes' => 1440],
+                    'timeGridDay' => ['type' => 'timeGrid', 'range' => 'day', 'slotMinutes' => 30],
+                    'timeGridWeek' => ['type' => 'timeGrid', 'range' => 'week', 'slotMinutes' => 30],
+                    'resourceTimeGridDay' => ['type' => 'timeGrid', 'range' => 'day', 'slotMinutes' => 30, 'resources' => true],
+                    'resourceTimeGridWeek' => ['type' => 'timeGrid', 'range' => 'week', 'slotMinutes' => 30, 'resources' => true],
                 ],
             ],
             // Zones of the toolbar. Space-separated groups of comma-separated
@@ -48,6 +52,10 @@ final readonly class CalendarOptions
             // H:i. A timed event shows on the day it ends only if it ends at or
             // after this time: '09:00' keeps a 22:00-06:00 shift on one day.
             'nextDayThreshold' => '00:00',
+            // When the business is open: a list of ['days' => ISO days,
+            // 'start' => 'HH:MM', 'end' => 'HH:MM']. The rest of the day is
+            // shaded in the time grid and the timeline. [] = no shading.
+            'businessHours' => [],
             // null = the request locale.
             'locale' => null,
             // null = the TimezoneResolverInterface service.
@@ -101,6 +109,7 @@ final readonly class CalendarOptions
         public bool $weekNumbers,
         public TimeFormat $timeFormat,
         public string $nextDayThreshold,
+        public BusinessHours $businessHours,
         public ?string $locale,
         public ?string $timezone,
         public int $dayMaxEvents,
@@ -196,6 +205,7 @@ final readonly class CalendarOptions
             weekNumbers: (bool) $display['weekNumbers'],
             timeFormat: self::enum(TimeFormat::class, $display['timeFormat'], 'display.timeFormat'),
             nextDayThreshold: $threshold,
+            businessHours: BusinessHours::fromArray($display['businessHours'], 'display.businessHours'),
             locale: $display['locale'] !== null ? (string) $display['locale'] : null,
             timezone: $timezone !== null ? (string) $timezone : null,
             dayMaxEvents: $dayMaxEvents,

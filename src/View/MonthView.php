@@ -32,7 +32,7 @@ final class MonthView implements CalendarViewInterface
         }
     }
 
-    public function usesResources(): bool
+    public function usesResources(ViewVariant $variant): bool
     {
         return false;
     }

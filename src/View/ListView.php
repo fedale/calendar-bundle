@@ -36,7 +36,7 @@ final class ListView implements CalendarViewInterface
         ViewRange::fromVariant($variant, ViewRange::Month);
     }
 
-    public function usesResources(): bool
+    public function usesResources(ViewVariant $variant): bool
     {
         return false;
     }

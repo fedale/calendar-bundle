@@ -16,6 +16,7 @@ final class DemoCalendar extends AbstractCalendar
     public function viewConfig(): array
     {
         return [
+            'display' => ['views' => ['enabled' => ['month', 'listMonth', 'timeGridWeek']]],
             'integration' => ['sources' => ['demo']],
         ];
     }

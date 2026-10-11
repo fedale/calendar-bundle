@@ -48,14 +48,14 @@ final class TimelineView implements CalendarViewInterface
             throw new \InvalidArgumentException(sprintf('Calendar view "%s" (timeline) takes only %s, got "%s".', $variant->name, implode(', ', self::PARAMS), implode('", "', $unknown)));
         }
         ViewRange::fromVariant($variant, ViewRange::Day);
-        [$slot, $start, $end] = $this->window($variant);
+        [$slot, $start, $end] = WindowParams::window($variant, 60);
         if (($end - $start) % $slot !== 0) {
             throw new \InvalidArgumentException(sprintf('Calendar view "%s": the window %s-%s must be a whole number of %d-minute slots.', $variant->name, $variant->param('dayStart', '00:00'), $variant->param('dayEnd', '24:00'), $slot));
         }
-        self::minutes($variant, 'scrollTime', '08:00');
+        WindowParams::minutes($variant, 'scrollTime', '08:00');
     }
 
-    public function usesResources(): bool
+    public function usesResources(ViewVariant $variant): bool
     {
         return true;
     }
@@ -79,7 +79,7 @@ final class TimelineView implements CalendarViewInterface
     {
         $options = $context->options;
         $range = $this->range($context);
-        [$slotMinutes, $dayStart, $dayEnd] = $this->window($context->variant);
+        [$slotMinutes, $dayStart, $dayEnd] = WindowParams::window($context->variant, 60);
 
         $days = [];
         for ($day = $range->start; $day < $range->end; $day = Days::add($day, 1)) {
@@ -117,9 +117,10 @@ final class TimelineView implements CalendarViewInterface
 
         $rows = [];
         $collapsed = array_flip($context->collapsed);
-        $addResource = function (CalendarResource $resource, int $depth, array $children) use (&$addResource, &$rows, $options, $foreground, $backgroundByResource, $collapsed): void {
+        $tree = ResourceTree::of($resources);
+        $addResource = function (CalendarResource $resource, int $depth) use (&$addResource, &$rows, $options, $foreground, $backgroundByResource, $collapsed, $tree): void {
             $key = 'r:'.$resource->id;
-            $hasChildren = isset($children[$resource->id]);
+            $hasChildren = $tree->hasChildren($resource);
             $isCollapsed = $hasChildren && isset($collapsed[$key]);
             $rows[] = new TimelineRow(
                 key: $key,
@@ -134,21 +135,20 @@ final class TimelineView implements CalendarViewInterface
                 bands: $backgroundByResource[$resource->id] ?? [],
             );
             if (!$isCollapsed) {
-                foreach ($children[$resource->id] ?? [] as $child) {
-                    $addResource($child, $depth + 1, $children);
+                foreach ($tree->children[$resource->id] ?? [] as $child) {
+                    $addResource($child, $depth + 1);
                 }
             }
         };
 
-        [$roots, $children] = $this->tree($resources);
         if ($options->resourceGroupBy === null) {
-            foreach ($roots as $root) {
-                $addResource($root, 0, $children);
+            foreach ($tree->roots as $root) {
+                $addResource($root, 0);
             }
         } else {
             $groupColumn = new ResourceColumn($options->resourceGroupBy);
             $grouped = [];
-            foreach ($roots as $root) {
+            foreach ($tree->roots as $root) {
                 $grouped[$groupColumn->value($root)][] = $root;
             }
             uksort($grouped, fn($a, $b) => strnatcasecmp((string) $a, (string) $b));
@@ -157,7 +157,20 @@ final class TimelineView implements CalendarViewInterface
                 $rows[] = new TimelineRow($key, true, (string) $value, null, [], 0, true, isset($collapsed[$key]));
                 if (!isset($collapsed[$key])) {
                     foreach ($members as $member) {
-                        $addResource($member, 1, $children);
+                        $addResource($member, 1);
+                    }
+                }
+            }
+        }
+
+        // Closed hours shade every row; only day-wide slots are too coarse to show them.
+        $closed = [];
+        if ($options->businessHours->isDefined() && $slotMinutes < 1440) {
+            foreach ($days as $day) {
+                foreach ($options->businessHours->closed($day, $dayStart, $dayEnd) as [$from, $to]) {
+                    $span = $axis->span($day->setTime(intdiv($from, 60), $from % 60), $to === 1440 ? Days::add($day, 1) : $day->setTime(intdiv($to, 60), $to % 60));
+                    if ($span !== null) {
+                        $closed[] = $span;
                     }
                 }
             }
@@ -165,7 +178,7 @@ final class TimelineView implements CalendarViewInterface
 
         $now = $axis->exactPosition($context->now->setTimezone($context->timezone));
         $scrollTo = $now ?? ($slotMinutes < 1440 && $days !== []
-            ? $axis->position($days[0]->setTime(...$this->hoursAndMinutes(self::minutes($context->variant, 'scrollTime', '08:00'))))
+            ? $axis->position($days[0]->setTime(...$this->hoursAndMinutes(WindowParams::minutes($context->variant, 'scrollTime', '08:00'))))
             : 0.0);
 
         return new TimelineViewModel(
@@ -174,6 +187,7 @@ final class TimelineView implements CalendarViewInterface
             daySlots: $slotMinutes >= 1440,
             rows: $rows,
             bands: $bands,
+            closed: $closed,
             columns: $options->resourceColumns,
             areaLabel: $options->resourceLabel,
             areaWidth: $options->resourceAreaWidth,
@@ -191,63 +205,6 @@ final class TimelineView implements CalendarViewInterface
     private function viewRange(ViewContext $context): ViewRange
     {
         return ViewRange::fromVariant($context->variant, ViewRange::Day);
-    }
-
-    /**
-     * Roots (no parent, or a parent that is not among the resources) and
-     * children by parent id, both sorted by order then title.
-     *
-     * @param list<CalendarResource> $resources
-     *
-     * @return array{list<CalendarResource>, array<string, list<CalendarResource>>}
-     */
-    private function tree(array $resources): array
-    {
-        usort($resources, fn(CalendarResource $a, CalendarResource $b) => [$a->order, $a->title] <=> [$b->order, $b->title]);
-        $ids = array_flip(array_map(fn(CalendarResource $resource) => $resource->id, $resources));
-
-        $roots = [];
-        $children = [];
-        foreach ($resources as $resource) {
-            if ($resource->parentId !== null && $resource->parentId !== $resource->id && isset($ids[$resource->parentId])) {
-                $children[$resource->parentId][] = $resource;
-            } else {
-                $roots[] = $resource;
-            }
-        }
-
-        return [$roots, $children];
-    }
-
-    /**
-     * @return array{int, int, int} slot minutes, window start, window end
-     */
-    private function window(ViewVariant $variant): array
-    {
-        $slot = $variant->param('slotMinutes', 60);
-        if (!\is_int($slot) || $slot < 5 || 1440 % $slot !== 0) {
-            throw new \InvalidArgumentException(sprintf('Calendar view "%s" takes a "slotMinutes" that divides a day (1440), e.g. 15, 30, 60, 360 or 1440.', $variant->name));
-        }
-        $start = self::minutes($variant, 'dayStart', '00:00');
-        $end = self::minutes($variant, 'dayEnd', '24:00', allowEndOfDay: true);
-        if ($end <= $start) {
-            throw new \InvalidArgumentException(sprintf('Calendar view "%s": "dayEnd" must be after "dayStart".', $variant->name));
-        }
-
-        return [$slot, $start, $end];
-    }
-
-    private static function minutes(ViewVariant $variant, string $param, string $default, bool $allowEndOfDay = false): int
-    {
-        $value = $variant->param($param, $default);
-        if ($allowEndOfDay && $value === '24:00') {
-            return 1440;
-        }
-        if (!\is_string($value) || preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $value, $match) !== 1) {
-            throw new \InvalidArgumentException(sprintf('Calendar view "%s" takes "%s" as HH:MM.', $variant->name, $param));
-        }
-
-        return (int) $match[1] * 60 + (int) $match[2];
     }
 
     /**

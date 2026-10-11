@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "symfony": {
     "controllers": {
-      "timeline": {
-        "main": "controllers/cal-timeline_controller.js",
-        "name": "cal-timeline",
+      "now": {
+        "main": "controllers/cal-now_controller.js",
+        "name": "cal-now",
         "fetch": "lazy",
         "enabled": true
       },

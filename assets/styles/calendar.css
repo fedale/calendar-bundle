@@ -31,6 +31,10 @@
     --cal-slot-width: 4rem;
     --cal-tl-header-height: 2.1rem;
     --cal-tl-max-height: 75vh;
+    --cal-slot-height: 1.5rem;
+    --cal-col-min-width: 7rem;
+    --cal-gutter-width: 4rem;
+    --cal-nonbusiness: rgb(0 0 0 / .045);
 
     font-family: var(--cal-font);
     color: var(--cal-fg);
@@ -47,6 +51,7 @@
         --cal-weekend-bg: #191b21;
         --cal-today-bg: #2c2817;
         --cal-accent: #5b8def;
+        --cal-nonbusiness: rgb(0 0 0 / .25);
     }
 }
 
@@ -740,6 +745,204 @@ a.cal-event:hover .cal-event__title {
 
 .cal-tl-more:hover {
     color: var(--cal-fg);
+}
+
+/* Business hours: the closed part of the day. */
+
+.cal-nonbusiness {
+    background: var(--cal-nonbusiness);
+}
+
+/* Time grid */
+
+.cal-tg {
+    border: 1px solid var(--cal-border);
+    border-radius: var(--cal-radius);
+    overflow: hidden;
+}
+
+.cal-tg__scroller {
+    position: relative;
+    max-height: var(--cal-tl-max-height);
+    overflow: auto;
+}
+
+/* Header rows and the body share one grid: gutter, then one track per column. */
+.cal-tg__row {
+    display: grid;
+    grid-template-columns: var(--cal-gutter-width) repeat(var(--cal-cols), minmax(var(--cal-col-min-width), 1fr));
+    width: max-content;
+    min-width: 100%;
+}
+
+.cal-tg__head {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--cal-bg);
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-tg__gutter {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--cal-bg);
+    border-right: 1px solid var(--cal-border);
+}
+
+.cal-tg__resource,
+.cal-tg__day {
+    padding: .4rem;
+    border-left: 1px solid var(--cal-border);
+    font-size: .85rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cal-tg__resources {
+    border-bottom: 1px solid var(--cal-border);
+    font-weight: 600;
+}
+
+.cal-tg__day::first-letter {
+    text-transform: uppercase;
+}
+
+.cal-tg__day--today time {
+    padding: 0 .4rem;
+    border-radius: 999px;
+    background: var(--cal-accent);
+    color: #fff;
+}
+
+.cal-tg__all-day {
+    border-top: 1px solid var(--cal-border);
+}
+
+.cal-tg__all-day-label {
+    padding: .3rem .4rem;
+    color: var(--cal-muted);
+    font-size: .7rem;
+    text-align: right;
+}
+
+.cal-tg__all-day-content {
+    display: grid;
+    grid-column: 2 / -1;
+    grid-template-columns: subgrid;
+    grid-auto-rows: min-content;
+    row-gap: var(--cal-gap);
+    padding: var(--cal-gap) 0;
+    min-height: 1.75rem;
+}
+
+.cal-tg__all-day-content > .cal-event {
+    grid-column: var(--cal-start) / span var(--cal-span);
+    grid-row: var(--cal-row);
+    margin: 0 var(--cal-gap);
+}
+
+.cal-tg__all-day-content > .cal-month__more {
+    grid-row: var(--cal-more-row);
+}
+
+.cal-tg__body {
+    height: calc(var(--cal-slots) * var(--cal-slot-height));
+}
+
+.cal-tg__labels {
+    position: sticky;
+}
+
+.cal-tg__label {
+    position: absolute;
+    top: var(--cal-top);
+    right: .4rem;
+    color: var(--cal-muted);
+    font-size: .7rem;
+    line-height: 1;
+    transform: translateY(-50%);
+}
+
+.cal-tg__col {
+    position: relative;
+    border-left: 1px solid var(--cal-border);
+    /* Slot lines, sized in percent so they match the gutter labels. */
+    background-image: linear-gradient(to bottom, var(--cal-border) 1px, transparent 1px);
+    background-size: 100% calc(100% / var(--cal-slots));
+}
+
+.cal-tg__col--weekend {
+    background-color: var(--cal-weekend-bg);
+}
+
+.cal-tg__col--today {
+    background-color: var(--cal-today-bg);
+}
+
+.cal-tg-band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--cal-top);
+    height: var(--cal-height);
+}
+
+.cal-tg-event {
+    position: absolute;
+    top: var(--cal-top);
+    left: calc(var(--cal-left) + 1px);
+    width: calc(var(--cal-width) - 3px);
+    height: var(--cal-height);
+    min-height: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: .1rem .3rem;
+    box-sizing: border-box;
+    border: 1px solid var(--cal-bg);
+    line-height: 1.25;
+    white-space: normal;
+}
+
+.cal-tg-event .cal-event__time {
+    font-size: .7rem;
+}
+
+.cal-tg-event.cal-event--continues-before {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.cal-tg-event.cal-event--continues-after {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.cal-tg-now {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--cal-top);
+    z-index: 1;
+    height: 2px;
+    margin-top: -1px;
+    background: var(--cal-now);
+    pointer-events: none;
+}
+
+.cal-tg-now::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: -5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cal-now);
 }
 
 @media (max-width: 600px) {

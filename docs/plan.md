@@ -273,7 +273,12 @@ Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto
    - vista timeline: corsie su un asse di tempo continuo, "+N altri" per riga, intestazioni su due livelli (per esempio settimana sopra, ore sotto), intestazioni fisse e scroll orizzontale in CSS;
    - gruppi comprimibili e linea dell'ora corrente (posizione dal server, aggiornata ogni minuto da un controller Stimulus minimo). **Scostamento**: la compressione non è lato client ma una LiveProp (`collapsed`) con un'azione: lo stato sopravvive alla navigazione e ai re-render (un `<details>` o un controller verrebbero riportati allo stato del server dal morphing di LiveComponent) e le righe compresse non vengono nemmeno renderizzate;
    - **toolbar configurabile** (`display.toolbar` con zone `start` / `center` / `end` e token, sul modello dei token di layout di gridview) e **pulsanti personalizzati** con azione URL (anche in Turbo Frame o modale), evento DOM o LiveAction.
-3. **Griglia oraria**: viste giorno e settimana, `OverlapLayout`, riga "tutto il giorno", orari lavorativi, colonne per risorsa (inclusa la combinazione giorni × risorse). View model della griglia oraria.
+3. **Griglia oraria** (completata): tipo di vista `timeGrid` con le varianti `timeGridDay`, `timeGridWeek`, `resourceTimeGridDay` e `resourceTimeGridWeek`.
+   - `ColumnLayout` (il `OverlapLayout` del piano): gli eventi sovrapposti si affiancano dentro la colonna del giorno, e ogni evento si allarga a destra dove le colonne vicine sono libere;
+   - gli eventi a orario che attraversano la mezzanotte si dividono sulle colonne dei giorni; quelli "tutto il giorno" vanno nella riga in alto, con lo stesso layout a corsie del mese;
+   - colonne per risorsa: risorse sopra, i loro giorni sotto (l'ordine contrario, giorni sopra e risorse sotto, non è implementato); `groupBy` non si applica alla griglia;
+   - **orari lavorativi** (`display.businessHours`): solo un aiuto visivo, scuriscono le ore di chiusura nella griglia e nella timeline;
+   - il controller Stimulus `cal-timeline` è diventato `cal-now`, con un parametro per l'asse (orizzontale per la timeline, verticale per la griglia).
 4. **Interazione**: selezione, spostamento, ridimensionamento, intenti, gestione dei rifiuti e dei conflitti.
 5. **Completamento**: vista anno con densità, configuratore UI (dipende dal nucleo di setting-bundle), temi, accessibilità, i18n.
 6. **Extra**: bridge API Platform. L'applicazione demo esiste già (calendar-demo) e cresce insieme alle fasi.
@@ -299,6 +304,8 @@ Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto
     | 14 sale, giorno / settimana / mese | 15 / 22 / 48 ms | 13 / 20 / 44 ms | 85 / 124 / 269 KB |
     | 50 sale, giorno / settimana | 20 / 41 ms | 16 / 38 ms | 136 / 271 KB |
     | 50 sale, mese (~1800 eventi) | 126 ms | 119 ms | 774 KB |
+
+    La griglia oraria, misurata nella fase 3, è leggera: settimana con ~110 eventi 26 ms, 50 colonne-risorsa 24 ms, HTML sotto i 125 KB. Le misure si ripetono con `bin/benchmark` di calendar-demo.
 
     **Decisione: anche la timeline resta un unico LiveComponent**, senza componenti figli per riga. Il punto debole è il peso della navigazione Live nel caso più grande (tutto l'HTML a ogni passo, ~710 KB non compressi). Se servirà, le leve sono la paginazione delle risorse o un rendering parziale per riga; oltre il centinaio di risorse va rimisurato.
 - **View model**: definiti vista per vista, nella fase in cui la vista viene implementata.

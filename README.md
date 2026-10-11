@@ -2,10 +2,10 @@
 
 > **A server-rendered calendar for Symfony UX that knows nothing about your domain.**
 
-Calendar Bundle renders month, list and resource timeline views (and, on the roadmap, week, day,
-year and resource-column views) of time-based data: work shifts, seat bookings, room schedules,
-lessons, anything with a start and an end. It is a **presentation component**: your application keeps the domain, the rules and the
-data, and hands the calendar a read-only view of them.
+Calendar Bundle renders month, list, day and week (time grid), resource timeline and resource
+column views of time-based data: work shifts, seat bookings, room schedules, lessons, anything with
+a start and an end. It is a **presentation component**: your application keeps the domain, the
+rules and the data, and hands the calendar a read-only view of them.
 
 - **Server-rendered.** A Live Component lays out the grid in PHP and Twig. The browser never builds
   the calendar: navigation is a round trip, and the period lives in the URL.
@@ -13,8 +13,8 @@ data, and hands the calendar a read-only view of them.
   `EventSourceInterface`). There is no universal `Appointment` entity to adopt.
 - **CSS-framework agnostic.** Its own `cal-*` classes, styled through `--cal-*` custom properties.
 
-> **Status:** early development (0.1). The month, list and timeline views are in place; the rest
-> of the roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
+> **Status:** early development (0.1). The views are in place; interaction (selecting, moving,
+> resizing events) is next. The roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
 
 ---
 
@@ -74,23 +74,24 @@ import '@fedale/calendar-bundle/styles/calendar.css';
 Alternatively, link it from your layout:
 `<link rel="stylesheet" href="{{ asset('@fedale/calendar-bundle/styles/calendar.css') }}">`.
 
-The bundle ships two small Stimulus controllers: `cal-timeline` (scrolls the timeline to "now" and
-keeps the "now" line moving) and `cal-button` (custom toolbar buttons that dispatch a DOM event).
+The bundle ships two small Stimulus controllers: `cal-now` (scrolls the timeline and the time grid
+to "now" and keeps the "now" line moving) and `cal-button` (custom toolbar buttons that dispatch a
+DOM event).
 Flex registers them in `assets/controllers.json`; without Flex, add them yourself:
 
 ```json
 {
     "controllers": {
         "@fedale/calendar-bundle": {
-            "timeline": { "enabled": true, "fetch": "lazy" },
+            "now": { "enabled": true, "fetch": "lazy" },
             "button": { "enabled": true, "fetch": "lazy" }
         }
     }
 }
 ```
 
-The calendar works without them: the timeline then opens at its start, and the "now" line stays
-where the server put it.
+The calendar works without them: the timeline and the time grid then open at their start, and the
+"now" line stays where the server put it.
 
 ## Your first calendar
 
@@ -244,6 +245,10 @@ Options form a tree. The bundle defaults, with every accepted key:
                 'timelineDay' => ['type' => 'timeline', 'range' => 'day', 'slotMinutes' => 60],
                 'timelineWeek' => ['type' => 'timeline', 'range' => 'week', 'slotMinutes' => 360],
                 'timelineMonth' => ['type' => 'timeline', 'range' => 'month', 'slotMinutes' => 1440],
+                'timeGridDay' => ['type' => 'timeGrid', 'range' => 'day', 'slotMinutes' => 30],
+                'timeGridWeek' => ['type' => 'timeGrid', 'range' => 'week', 'slotMinutes' => 30],
+                'resourceTimeGridDay' => ['type' => 'timeGrid', 'range' => 'day', 'slotMinutes' => 30, 'resources' => true],
+                'resourceTimeGridWeek' => ['type' => 'timeGrid', 'range' => 'week', 'slotMinutes' => 30, 'resources' => true],
             ],
         ],
         'toolbar' => [                  // see "Toolbar"
@@ -257,6 +262,7 @@ Options form a tree. The bundle defaults, with every accepted key:
         'weekNumbers' => false,
         'timeFormat' => '24h',          // or '12h'
         'nextDayThreshold' => '00:00',  // HH:MM, see below
+        'businessHours' => [],          // see "Business hours"
         'locale' => null,               // null = the request locale
         'timezone' => null,             // null = TimezoneResolverInterface
         'month' => [
@@ -341,6 +347,7 @@ and the URL use variant names, so one type serves several durations, as `timelin
 | `month` | none | Whole weeks around the month. Multi-day events are continuous bars. A day with more events than `dayMaxEvents` shows "+N more", which opens the full list in a popover (native `popover`, no JavaScript) |
 | `list` | `range`: `day`, `week` or `month` | An agenda of the days that have events. Multi-day events are listed on every day they cover |
 | `timeline` | `range`: `day`, `week` or `month`; `slotMinutes`: a divisor of 1440; `dayStart` / `dayEnd`: the window of each day (HH:MM, `24:00` allowed as end); `scrollTime`: where the view opens when "now" is off screen (default `08:00`) | Resources down the side, time across (see "Timeline") |
+| `timeGrid` | `range`: `day` or `week`; `slotMinutes`, `dayStart`, `dayEnd`, `scrollTime` as above; `resources`: one column per resource and day; `allDaySlot` (default `true`); `allDayMaxEvents` (default 3) | Days as columns, hours down the side, an all-day row on top (see "Time grid") |
 
 Every view honors `firstDay`, `hiddenDays` and the display timezone, and is laid out in PHP: the
 server sends positions as custom properties (`--cal-start`, `--cal-span`, `--cal-left`,
@@ -399,6 +406,33 @@ final class RoomSource implements EventSourceInterface, ResourceSourceInterface
         'groupBy' => 'building',
         'width' => '26rem',
     ],
+],
+```
+
+### Time grid
+
+The `timeGrid` type shows days side by side with the hours running down, as in most agenda apps.
+
+- Timed events sit at their hours. Events that overlap share the column side by side, and an event
+  grows to the right over the space its neighbors leave free.
+- A timed event crossing midnight is split over the days it covers, squared off where it continues.
+- All-day events go to the all-day row on top, as bars over the days they cover; beyond
+  `allDayMaxEvents` lanes, the rest goes into "+N more".
+- With `resources: true` (`resourceTimeGridDay`, `resourceTimeGridWeek`), every resource gets its
+  own columns, resources above and their days below, in the same order as the timeline (parents
+  followed by their children). An event shows in the columns of its `resourceIds`. `groupBy` does
+  not apply here.
+- The header and the hour gutter stay in place while the grid scrolls, and a red line marks "now".
+
+### Business hours
+
+`display.businessHours` lists when the business is open; the time grid and the timeline (with slots
+shorter than a day) shade the rest. It is a visual aid only: it never hides or rejects events.
+
+```php
+'businessHours' => [
+    ['days' => [1, 2, 3, 4, 5], 'start' => '09:00', 'end' => '18:00'],
+    ['days' => [6], 'start' => '09:00', 'end' => '13:00'],
 ],
 ```
 
@@ -473,7 +507,10 @@ Every visual value is a custom property on `.cal`. Override the tokens rather th
     --cal-radius: 8px;
     --cal-week-min-height: 8rem;
     --cal-slot-width: 5rem;       /* timeline slot width */
-    --cal-tl-max-height: 60vh;    /* timeline height before it scrolls */
+    --cal-tl-max-height: 60vh;    /* timeline and time grid height before they scroll */
+    --cal-slot-height: 2rem;      /* time grid slot height */
+    --cal-col-min-width: 9rem;    /* time grid column width before it scrolls sideways */
+    --cal-nonbusiness: rgb(0 0 0 / .06);
     --cal-primary: #0f766e;       /* custom buttons */
     --cal-now: #dc2626;           /* the "now" line */
 }

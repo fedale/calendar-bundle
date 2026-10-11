@@ -1,0 +1,97 @@
+{# Time-grid view. Every row of the header and the body is the same CSS grid
+   (gutter + one track per column), so headers, the all-day row and the
+   columns line up without measuring. Positions inside a column are
+   percentages of the day window (--cal-top, --cal-height) and of the column
+   (--cal-left, --cal-width), computed by the server. #}
+{% set domain = 'CalendarBundle' %}
+{% set time_skeleton = calendar.timeSkeleton %}
+<div class="cal-tg"
+     style="--cal-cols: {{ model.columns|length }}; --cal-slots: {{ model.slots|length }};"
+     data-controller="cal-now"
+     data-cal-now-windows-value="{{ model.windows|json_encode }}"
+     data-cal-now-scroll-value="{{ model.scrollTo }}"
+     data-cal-now-axis-value="y">
+    <div class="cal-tg__scroller" data-cal-now-target="scroller">
+        <div class="cal-tg__head">
+            {% if model.resourceHeaders is not empty %}
+                <div class="cal-tg__row cal-tg__resources">
+                    <div class="cal-tg__gutter"></div>
+                    {% for header in model.resourceHeaders %}
+                        <div class="cal-tg__resource" style="grid-column: span {{ header.span }};">{{ header.resource.title }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {# With resources on a single day, the date is already the title. #}
+            {% if model.resourceHeaders is empty or model.columns|length > model.resourceHeaders|length %}
+            <div class="cal-tg__row cal-tg__days">
+                <div class="cal-tg__gutter"></div>
+                {% for column in model.columns %}
+                    <div class="cal-tg__day{{ column.isToday ? ' cal-tg__day--today' }}">
+                        <time datetime="{{ column.day.format('Y-m-d') }}"{{ column.isToday ? ' aria-current="date"' }}>{{ cal_format(column.day, 'EEEd', locale) }}</time>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if model.allDay %}
+                <div class="cal-tg__row cal-tg__all-day">
+                    <div class="cal-tg__gutter cal-tg__all-day-label">{{ 'time_grid.all_day'|trans({}, domain, locale) }}</div>
+                    <div class="cal-tg__all-day-content" style="--cal-more-row: {{ model.allDay.laneCount + 1 }};">
+                        {% for segment in model.allDay.segments %}
+                            {{ include('@FedaleCalendar/view/_event.html.twig', {
+                                item: segment.item,
+                                extra_class: ' cal-event--bar' ~ (segment.continuesBefore ? ' cal-event--continues-before') ~ (segment.continuesAfter ? ' cal-event--continues-after'),
+                                extra_style: ' --cal-start: ' ~ (segment.start + 1) ~ '; --cal-span: ' ~ segment.span ~ '; --cal-row: ' ~ (segment.lane + 1) ~ ';',
+                            }) }}
+                        {% endfor %}
+                        {% for column, hidden in model.allDay.overflow %}
+                            {% set popover_id = 'cal-' ~ calendar.calendar ~ '-tg-more-' ~ column %}
+                            <button type="button" class="cal-month__more" style="--cal-start: {{ column + 1 }};" popovertarget="{{ popover_id }}">
+                                {{- 'month.more'|trans({'%count%': hidden|length}, domain, locale) -}}
+                            </button>
+                            <div class="cal-popover" id="{{ popover_id }}" popover>
+                                <h3 class="cal-popover__title">{{ cal_format(model.columns[column].day, 'EEEEdMMMM', locale) }}</h3>
+                                <ul class="cal-popover__list">
+                                    {% for item in model.allDayItems[column] ?? hidden %}
+                                        <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item}) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="cal-tg__row cal-tg__body" data-cal-now-target="track">
+            <div class="cal-tg__gutter cal-tg__labels" aria-hidden="true">
+                {% for slot in model.slots %}
+                    {% if slot.start.format('i') == '00' and not loop.first %}
+                        <span class="cal-tg__label" style="--cal-top: {{ cal_pct(slot.left) }};">{{ cal_format(slot.start, time_skeleton, locale) }}</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% for column in model.columns %}
+                <div class="cal-tg__col{{ column.isToday ? ' cal-tg__col--today' }}{{ column.isWeekend ? ' cal-tg__col--weekend' }}">
+                    {% for closed in column.closed %}
+                        <div class="cal-nonbusiness cal-tg-band" style="--cal-top: {{ cal_pct(closed[0]) }}; --cal-height: {{ cal_pct(closed[1]) }};"></div>
+                    {% endfor %}
+                    {% for band in column.bands %}
+                        {% set color = cal_color(band.item.event.style.color) %}
+                        <div class="cal-band cal-tg-band" style="--cal-top: {{ cal_pct(band.top) }}; --cal-height: {{ cal_pct(band.height) }};{{ color ? ' --cal-event-color: ' ~ color ~ ';' }}" title="{{ band.item.title }}"></div>
+                    {% endfor %}
+                    {% for event in column.events %}
+                        {{ include('@FedaleCalendar/view/_event.html.twig', {
+                            item: event.item,
+                            show_time: not event.continuesBefore,
+                            extra_class: ' cal-event--bar cal-tg-event' ~ (event.continuesBefore ? ' cal-event--continues-before') ~ (event.continuesAfter ? ' cal-event--continues-after'),
+                            extra_style: ' --cal-top: ' ~ cal_pct(event.top) ~ '; --cal-height: ' ~ cal_pct(event.height) ~ '; --cal-left: ' ~ cal_pct(event.left) ~ '; --cal-width: ' ~ cal_pct(event.width) ~ ';',
+                        }) }}
+                    {% endfor %}
+                    {% if column.now is not null %}
+                        <div class="cal-tg-now" style="--cal-top: {{ cal_pct(column.now) }};" data-cal-now-target="now"></div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
