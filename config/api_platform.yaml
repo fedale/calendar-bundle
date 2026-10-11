@@ -1,0 +1,17 @@
+# The API Platform bridge, loaded only when ApiPlatformBundle is enabled.
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Fedale\CalendarBundle\Bridge\ApiPlatform\State\CalendarApi:
+        arguments:
+            $exposed: '%fedale_calendar.api.calendars%'
+            $readAttribute: '%fedale_calendar.api.read_attribute%'
+            $writeAttribute: '%fedale_calendar.api.write_attribute%'
+            $authorization: '@?security.authorization_checker'
+    Fedale\CalendarBundle\Bridge\ApiPlatform\State\CalendarProvider: ~
+    Fedale\CalendarBundle\Bridge\ApiPlatform\State\EventProvider: ~
+    Fedale\CalendarBundle\Bridge\ApiPlatform\State\ResourceProvider: ~
+    Fedale\CalendarBundle\Bridge\ApiPlatform\State\IntentProcessor: ~

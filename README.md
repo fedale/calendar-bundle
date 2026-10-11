@@ -13,8 +13,9 @@ rules and the data, and hands the calendar a read-only view of them.
   `EventSourceInterface`). There is no universal `Appointment` entity to adopt.
 - **CSS-framework agnostic.** Its own `cal-*` classes, styled through `--cal-*` custom properties.
 
-> **Status:** early development (0.1). Views, interaction, end-user settings, themes and
-> keyboard access are in place. The roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
+> **Status:** early development (0.1). Views, interaction, end-user settings, themes, keyboard
+> access and an API Platform bridge are in place. The roadmap is in [`docs/plan.md`](docs/plan.md)
+> (in Italian).
 
 ---
 
@@ -640,6 +641,55 @@ screen) and `button.group` (joined groups). Themes only dress the controls: the 
 always comes from its own stylesheet.
 
 ---
+
+---
+
+## API (API Platform bridge)
+
+With API Platform 4 installed and the bridge turned on, the bundle exposes its calendars to API
+clients (mobile apps, other services). The API keeps the calendar's abstraction: clients read what the calendar
+would show, and write **intents**, the same ones the UI sends, which your handlers decide on. It is
+not a CRUD over your entities; expose those yourself if you need to.
+
+| Method and path | What it does |
+|---|---|
+| `GET /calendars`, `GET /calendars/{calendar}` | The calendars: views, timezone, whether ranges can be selected |
+| `GET /calendars/{calendar}/events?start=…&end=…[&resources=a,b]` | Events of a range (ISO 8601 with offset, at most 400 days), through the same sources and visibility rules as the UI: hidden events left out, busy ones without title or url, the `data` payload never exposed |
+| `GET /calendars/{calendar}/events/{source}/{id}` | One event, when its source implements `EventFinderInterface` |
+| `GET /calendars/{calendar}/resources[/{id}]` | Resources, with the fields the calendar's resource columns show |
+| `POST /calendars/{calendar}/events/{source}/{id}/move` | `MoveEvent`: `{"start", "end", "resource"?, "fromResource"?}` |
+| `POST /calendars/{calendar}/events/{source}/{id}/resize` | `ResizeEvent`: `{"end", "start"?}` |
+| `DELETE /calendars/{calendar}/events/{source}/{id}` | `DeleteEvent`; answers 204 |
+| `POST /calendars/{calendar}/selections` | `SelectRange`: `{"start", "end", "allDay"?, "resource"?}` |
+
+- Pass the event's `version` in `If-Match` (`If-Match: "7"`) or in the body: a change made
+  meanwhile answers **409**.
+- Answers map the handler's `IntentResult`: accepted **200** `{"accepted", "message", "url"}`,
+  `Conflict` **409**, `Validation` **422**, `Forbidden` **403**, with the message as the error's
+  `detail`. Malformed times answer 400.
+- A write may only reach the calendar's own sources.
+- Implement `EventFinderInterface` on your sources (one event by id): writes then get the same
+  checks as the UI's before your handler (event visible, interaction enabled, version current).
+  Without it, only your handler decides.
+
+The bridge is **off by default**: installing API Platform exposes nothing until you decide what to
+expose and to whom.
+
+```yaml
+fedale_calendar:
+    api:
+        enabled: true
+        calendars: [rooms, team]            # the calendars the API exposes; empty = all
+        read_attribute: CALENDAR_API_READ   # isGranted(attribute, calendar id) before any read
+        write_attribute: CALENDAR_API_WRITE # ... and before any write; null = no check
+```
+
+A calendar left out of `calendars` answers 404, as if it did not exist. With an attribute set, the
+bridge asks Symfony's security `isGranted($attribute, $calendarId)`: write a voter for it to decide
+per user and per calendar (if symfony/security is missing, the attribute denies everything rather
+than open up). The routes take API Platform's prefix (usually `/api`) and should sit behind your
+API firewall: the bundle does not authenticate anyone; your sources filter what each user may see
+and your handlers what they may change.
 
 ### Adding a view
 

@@ -53,6 +53,7 @@ hands it.
 | `src/Intent/` | The write side: intents (`SelectRange`, `MoveEvent`, ...), `IntentResult` and `Rejection`, and `IntentDispatcher` (the calendar's own checks, then the source's handler) |
 | `src/UiSettings/` | End-user settings on top of fedale/setting-bundle (optional): `UiSettingInterface`, `AbstractUiSetting`, the built-in settings, `UiSettingsResolver` (namespace `calendar.ui`) |
 | `src/Controller/` | `UiSettingsController`, the body of the settings dialog |
+| `src/Bridge/ApiPlatform/` | The optional API: resources (DTOs, never the application's entities), providers reading through the same collectors as the UI, `IntentProcessor` sending the same intents |
 | `src/Theme/` | `ThemeRegistry`: control classes by class key (`default`, `bootstrap5`, application themes) |
 | `src/Source/` | `SourceRegistry`, `EventCollector` (fetch, filter, convert, sort), `ResourceCollector`, `CalendarItem` (an event as the views see it) |
 | `src/View/` | One class per view type (`YearView`, `MonthView`, `ListView`, `TimelineView`, `TimeGridView`), `ViewContext`, `ViewRegistry`, and helpers shared by views: `ResourceTree` (sorting and nesting), `WindowParams` (slot and day-window parameters) |
@@ -103,6 +104,11 @@ hands it.
   model of the calendar.
 - **Undo the drag preview after the action.** Live Components keep changes made by scripts across
   re-renders, so the preview (transform, size, selection box) is removed once the answer arrives.
+- **The API is the calendar, not a CRUD.** The bridge reads through the collectors (same visibility
+  rules as the UI) and writes intents through `IntentDispatcher::dispatchById()`; it never touches
+  application entities. It is opt-in (`fedale_calendar.api.enabled`) and its services exist only
+  then, with ApiPlatformBundle enabled; every operation goes through `CalendarApi::calendarId()`,
+  which enforces the exposed list and the read/write security attributes first.
 - **setting-bundle is optional.** Nothing under `src/UiSettings/` or `src/Controller/` may be
   needed to render a calendar: the services are only defined when setting-bundle is enabled, and the
   component works with `UiSettingsResolver` and the URL generator absent.

@@ -2,6 +2,7 @@
 
 namespace Fedale\CalendarBundle;
 
+use ApiPlatform\Symfony\Bundle\ApiPlatformBundle;
 use Fedale\CalendarBundle\Attribute\AsCalendar;
 use Fedale\CalendarBundle\Attribute\AsCalendarSource;
 use Fedale\CalendarBundle\Attribute\AsCalendarView;
@@ -46,6 +47,25 @@ class FedaleCalendarBundle extends AbstractBundle
                     ->useAttributeAsKey('id')
                     ->variablePrototype()->end()
                 ->end()
+                ->arrayNode('api')
+                    ->info('The API Platform bridge. Off by default: exposing calendars is a decision, not a side effect of installing API Platform.')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('enabled')->defaultFalse()->end()
+                        ->arrayNode('calendars')
+                            ->info('Ids of the calendars the API exposes; empty = every calendar.')
+                            ->scalarPrototype()->end()
+                        ->end()
+                        ->scalarNode('read_attribute')
+                            ->info('Security attribute checked with isGranted(attribute, calendar id) before any read; null = no check.')
+                            ->defaultNull()
+                        ->end()
+                        ->scalarNode('write_attribute')
+                            ->info('Security attribute checked with isGranted(attribute, calendar id) before any write; null = no check.')
+                            ->defaultNull()
+                        ->end()
+                    ->end()
+                ->end()
                 ->arrayNode('themes')
                     ->info('Framework themes: CSS classes of the controls by class key, optionally extending a built-in theme (default, bootstrap5).')
                     ->useAttributeAsKey('name')
@@ -89,6 +109,24 @@ class FedaleCalendarBundle extends AbstractBundle
         });
 
         $this->loadUiSettings($builder);
+
+        // The API Platform bridge: opt-in, and only with ApiPlatformBundle.
+        $api = $config['api'];
+        if ($api['enabled'] && self::isBundleEnabled($builder, ApiPlatformBundle::class)) {
+            if (($api['read_attribute'] !== null || $api['write_attribute'] !== null) && !$builder->hasExtension('security')) {
+                throw new \LogicException('fedale_calendar.api.read_attribute and write_attribute need symfony/security-bundle.');
+            }
+            $container->import('../config/api_platform.yaml');
+            $container->parameters()
+                ->set('fedale_calendar.api.calendars', $api['calendars'])
+                ->set('fedale_calendar.api.read_attribute', $api['read_attribute'])
+                ->set('fedale_calendar.api.write_attribute', $api['write_attribute']);
+        }
+    }
+
+    private static function isBundleEnabled(ContainerBuilder $builder, string $bundle): bool
+    {
+        return class_exists($bundle) && \in_array($bundle, (array) ($builder->hasParameter('kernel.bundles') ? $builder->getParameter('kernel.bundles') : []), true);
     }
 
     /**
@@ -100,8 +138,7 @@ class FedaleCalendarBundle extends AbstractBundle
      */
     private function loadUiSettings(ContainerBuilder $builder): void
     {
-        $enabled = interface_exists(SettingDefinitionInterface::class)
-            && \in_array(FedaleSettingBundle::class, (array) ($builder->hasParameter('kernel.bundles') ? $builder->getParameter('kernel.bundles') : []), true);
+        $enabled = interface_exists(SettingDefinitionInterface::class) && self::isBundleEnabled($builder, FedaleSettingBundle::class);
 
         if ($enabled) {
             $builder->register('fedale_calendar.ui_settings.resolver', UiSettingsResolver::class)
@@ -136,6 +173,19 @@ class FedaleCalendarBundle extends AbstractBundle
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
     {
+        // The bridge's resources join API Platform's mapping only when the
+        // application turned the bridge on (the config is not processed yet:
+        // any `api.enabled: true` among the raw configs counts).
+        $apiEnabled = false;
+        foreach ($builder->getExtensionConfig('fedale_calendar') as $raw) {
+            $apiEnabled = (bool) ($raw['api']['enabled'] ?? $apiEnabled);
+        }
+        if ($apiEnabled && $builder->hasExtension('api_platform')) {
+            $builder->prependExtensionConfig('api_platform', [
+                'mapping' => ['paths' => [__DIR__.'/Bridge/ApiPlatform/Resource']],
+            ]);
+        }
+
         // Expose assets/ to AssetMapper as @fedale/calendar-bundle, so the app
         // imports the stylesheet without copying it.
         if (interface_exists(AssetMapperInterface::class)) {

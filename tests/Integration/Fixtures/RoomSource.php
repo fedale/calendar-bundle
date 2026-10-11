@@ -3,6 +3,7 @@
 namespace Fedale\CalendarBundle\Tests\Integration\Fixtures;
 
 use Fedale\CalendarBundle\Attribute\AsCalendarSource;
+use Fedale\CalendarBundle\Contract\EventFinderInterface;
 use Fedale\CalendarBundle\Contract\EventSourceInterface;
 use Fedale\CalendarBundle\Contract\IntentHandlerInterface;
 use Fedale\CalendarBundle\Contract\ResourceSourceInterface;
@@ -17,7 +18,7 @@ use Fedale\CalendarBundle\Model\CalendarResource;
 use Fedale\CalendarBundle\Model\EventInteractions;
 
 #[AsCalendarSource('rooms')]
-final class RoomSource implements EventSourceInterface, ResourceSourceInterface, IntentHandlerInterface
+final class RoomSource implements EventSourceInterface, ResourceSourceInterface, IntentHandlerInterface, EventFinderInterface
 {
     /** @var list<CalendarIntent> what the calendar handed over, for the tests to inspect */
     public static array $handled = [];
@@ -36,6 +37,17 @@ final class RoomSource implements EventSourceInterface, ResourceSourceInterface,
 
         yield new CalendarEvent('keynote', 'Keynote', $at('2026-10-10 09:00'), $at('2026-10-10 12:00'), resourceIds: ['a', 'c']);
         yield new CalendarEvent('workshop', 'Workshop', $at('2026-10-10 10:00'), $at('2026-10-10 11:00'), resourceIds: ['b1'], interactions: new EventInteractions(movable: true, resizable: true, deletable: true), version: '7');
+    }
+
+    public function findEvent(string $id): ?CalendarEvent
+    {
+        foreach ($this->getEvents(new \Fedale\CalendarBundle\Model\CalendarQuery(new \Fedale\CalendarBundle\Model\DateRange(new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-01')), new \DateTimeZone('Europe/Rome'))) as $event) {
+            if ($event->id === $id) {
+                return $event;
+            }
+        }
+
+        return null;
     }
 
     public function handle(CalendarIntent $intent): IntentResult

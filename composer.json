@@ -41,11 +41,16 @@
         "symfony/yaml": "^6.4 || ^7.0 || ^8.0",
         "fedale/setting-bundle": "^1.1",
         "symfony/form": "^6.4 || ^7.0 || ^8.0",
-        "symfony/validator": "^6.4 || ^7.0 || ^8.0"
+        "symfony/validator": "^6.4 || ^7.0 || ^8.0",
+        "api-platform/symfony": "^4.1",
+        "symfony/serializer": "^6.4 || ^7.0 || ^8.0",
+        "symfony/property-info": "^6.4 || ^7.0 || ^8.0",
+        "symfony/property-access": "^6.4 || ^7.0 || ^8.0"
     },
     "suggest": {
         "fedale/setting-bundle": "Enables the UI settings dialog: end users set calendar options at runtime, globally or per calendar (needs symfony/form)",
-        "symfony/form": "Required by the UI settings dialog"
+        "symfony/form": "Required by the UI settings dialog",
+        "api-platform/symfony": "Exposes the calendars, their events and resources, and their intents as an API (4.x)"
     },
     "autoload": {
         "psr-4": {

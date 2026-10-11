@@ -2,6 +2,7 @@
 
 namespace Fedale\CalendarBundle\Tests\Integration;
 
+use ApiPlatform\Symfony\Bundle\ApiPlatformBundle;
 use Fedale\CalendarBundle\FedaleCalendarBundle;
 use Fedale\CalendarBundle\Tests\Integration\Fixtures\MemoryScopedStore;
 use Fedale\CalendarBundle\Tests\Integration\Fixtures\NoSettingStorage;
@@ -21,7 +22,8 @@ use Symfony\UX\TwigComponent\TwigComponentBundle;
 
 /**
  * Smallest app able to render the calendar: Framework, Twig, Twig/Live
- * components, setting-bundle (UI settings, stored in memory) and the bundle,
+ * components, setting-bundle (UI settings, stored in memory), API Platform
+ * (the bridge, under /api) and the bundle,
  * with demo calendars and a frozen clock (Saturday 10 October 2026,
  * Europe/Rome).
  */
@@ -36,6 +38,7 @@ final class TestKernel extends Kernel
         yield new StimulusBundle();
         yield new TwigComponentBundle();
         yield new LiveComponentBundle();
+        yield new ApiPlatformBundle();
         yield new FedaleSettingBundle();
         yield new FedaleCalendarBundle();
     }
@@ -66,6 +69,12 @@ final class TestKernel extends Kernel
             'router' => ['utf8' => true],
             'php_errors' => ['log' => true],
             'form' => ['enabled' => true, 'csrf_protection' => false],
+            'serializer' => ['enabled' => true],
+            'property_info' => ['enabled' => true],
+        ]);
+        $container->extension('api_platform', [
+            'formats' => ['jsonld' => ['application/ld+json'], 'json' => ['application/json']],
+            'docs_formats' => ['jsonopenapi' => ['application/vnd.openapi+json']],
         ]);
         // UI settings in memory; the free-form settings are not used.
         $container->extension('fedale_setting', [
@@ -77,6 +86,7 @@ final class TestKernel extends Kernel
         $container->extension('twig_component', ['anonymous_template_directory' => 'components/']);
         $container->extension('fedale_calendar', [
             'defaults' => ['display' => ['timezone' => 'Europe/Rome']],
+            'api' => ['enabled' => true],
         ]);
 
         // TwigBundle wires its form integration only when symfony/form is a
@@ -94,5 +104,6 @@ final class TestKernel extends Kernel
     {
         $routes->import('@LiveComponentBundle/config/routes.php')->prefix('/_components');
         $routes->import(\dirname(__DIR__, 2).'/src/Controller/UiSettingsController.php', 'attribute')->prefix('/calendar/_settings');
+        $routes->import('.', 'api_platform')->prefix('/api');
     }
 }

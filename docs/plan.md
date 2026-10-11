@@ -291,7 +291,14 @@ Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto
    - **temi**: mappa di chiavi di classe per i controlli (`default`, `bootstrap5`, temi dell'applicazione in YAML), come gridview;
    - **accessibilità**: spostamento e ridimensionamento da tastiera, focus mantenuto dopo il rendering, `aria-description` sugli eventi interattivi. Restano da fare i ruoli ARIA di griglia con navigazione a frecce tra le celle;
    - **i18n**: inglese, italiano, francese, tedesco e spagnolo.
-6. **Extra**: bridge API Platform. L'applicazione demo esiste già (calendar-demo) e cresce insieme alle fasi.
+6. **Extra**: bridge API Platform (completato). L'applicazione demo esiste già (calendar-demo) e cresce insieme alle fasi.
+   - in `src/Bridge/ApiPlatform/`, **opt-in** (`fedale_calendar.api.enabled`, spento di default) e solo con ApiPlatformBundle abilitato: installare API Platform non deve esporre nulla per effetto collaterale. Si possono limitare i calendari esposti (`api.calendars`, gli altri rispondono 404) e richiedere attributi di sicurezza per lettura e scrittura (`api.read_attribute`, `api.write_attribute`, verificati con `isGranted(attributo, id calendario)`); le risorse sono DTO (calendari, eventi, risorse, selezioni), mai le entità dell'applicazione;
+   - **lettura** attraverso gli stessi collector della UI, quindi con le stesse regole di visibilità (eventi `Hidden` esclusi, `BusyOnly` senza titolo né url, `data` mai esposto);
+   - **scrittura** con gli stessi intenti della UI (`move`, `resize`, `delete`, `selections`), passando da `IntentDispatcher::dispatchById()`; gli esiti diventano stati HTTP (200, 409, 422, 403); la versione arriva in `If-Match` o nel body;
+   - nuova interfaccia opzionale **`EventFinderInterface`** (una fonte restituisce un evento dato l'id): via API non c'è una pagina a schermo da cui ritrovare l'evento, e con il finder le scritture hanno gli stessi controlli preliminari della UI; senza, decide solo l'handler;
+   - `IntentDispatcher` ora rifiuta gli intenti verso fonti che non appartengono al calendario: dalla UI era implicito, via API va controllato;
+   - `DELETE` risponde 204 senza il messaggio dell'handler (comportamento standard di API Platform);
+   - da fare se servirà: export iCal.
 
 ## 12. Da approfondire durante le fasi
 

@@ -2,7 +2,9 @@
 
 namespace Fedale\CalendarBundle\Intent;
 
+use Fedale\CalendarBundle\Contract\EventFinderInterface;
 use Fedale\CalendarBundle\Contract\IntentHandlerInterface;
+use Fedale\CalendarBundle\Model\EventVisibility;
 use Fedale\CalendarBundle\Options\CalendarOptions;
 use Fedale\CalendarBundle\Source\CalendarItem;
 use Fedale\CalendarBundle\Source\SourceRegistry;
@@ -42,6 +44,10 @@ class IntentDispatcher
         if (!$intent instanceof EventIntent) {
             throw new \InvalidArgumentException(sprintf('Unsupported calendar intent %s.', get_debug_type($intent)));
         }
+        if (!\in_array($intent->source, $options->sources, true)) {
+            // Only the calendar's own sources: a request cannot reach others.
+            return IntentResult::rejected(Rejection::Forbidden, 'intent.not_allowed', translationDomain: self::DOMAIN);
+        }
 
         $item = null;
         foreach ($items as $candidate) {
@@ -79,6 +85,35 @@ class IntentDispatcher
         }
 
         return $source->handle($intent);
+    }
+
+    /**
+     * For clients without a page on screen (an API): the event is looked up
+     * by id through the source's {@see EventFinderInterface}, then checked as
+     * from the page. A source without a finder leaves every check but the
+     * obvious ones to its handler.
+     */
+    public function dispatchById(CalendarOptions $options, CalendarIntent $intent, \DateTimeZone $timezone): IntentResult
+    {
+        if (!$intent instanceof EventIntent || !\in_array($intent->source, $options->sources, true)) {
+            return $this->dispatch($options, $intent, []);
+        }
+
+        $source = $this->sources->get($intent->source);
+        if ($source instanceof EventFinderInterface) {
+            $event = $source->findEvent($intent->eventId);
+            $items = $event !== null && $event->visibility !== EventVisibility::Hidden ? [CalendarItem::fromEvent($intent->source, $event, $timezone)] : [];
+
+            return $this->dispatch($options, $intent, $items);
+        }
+
+        if (($intent instanceof MoveEvent || $intent instanceof ResizeEvent) && $intent->end <= $intent->start) {
+            return IntentResult::rejected(Rejection::Validation, 'intent.invalid', translationDomain: self::DOMAIN);
+        }
+
+        return $source instanceof IntentHandlerInterface
+            ? $source->handle($intent)
+            : IntentResult::rejected(Rejection::Forbidden, 'intent.read_only', translationDomain: self::DOMAIN);
     }
 
     private function selectHandler(CalendarOptions $options): ?IntentHandlerInterface
