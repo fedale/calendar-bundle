@@ -1,18 +1,50 @@
 {# One event, as a link when it has a url. Expects `item` (CalendarItem),
-   `locale`, `time_skeleton`; optional `show_time` (default true; `??`, not `|default`, which would turn false into true), `extra_class`
-   and `extra_style` (grid placement). #}
+   `locale`, `time_skeleton`. Optional:
+   - `show_time` (default true; `??`, not `|default`, which would turn false into true);
+   - `extra_class`, `extra_style` (placement);
+   - `interactive` (default true): false for read-only copies, e.g. in a popover;
+   - `resizable_here` (default true): false where the event continues past this piece;
+   - `resource_id`: the row or column the event is drawn in, sent back with a move.
+   Interactive events carry their source, id, version and wall-clock times as
+   data attributes: the cal-interact controller builds intents from them and
+   from the track under the pointer, nothing else. #}
 {% set domain = 'CalendarBundle' %}
 {% set event = item.event %}
 {% set color = cal_color(event.style.color) %}
 {% set title = item.title ?? ('event.busy'|trans({}, domain, locale)) %}
 {% set tag = item.url ? 'a' : 'div' %}
+{% set live = (interactive ?? true) and not item.background %}
+{% set movable = live and event.interactions.movable %}
+{% set resizable = live and event.interactions.resizable and (resizable_here ?? true) %}
+{% set clickable = live and event.interactions.clickable and not item.url %}
+{% set deletable = live and event.interactions.deletable %}
+{% set wall = item.allDay ? 'Y-m-d' : 'Y-m-d\\TH:i' %}
 <{{ tag }}{% if item.url %} href="{{ item.url }}"{% endif %}
-    class="cal-event{{ item.allDay ? ' cal-event--all-day' : ' cal-event--timed' }}{{ item.busy ? ' cal-event--busy' }}{{ extra_class|default('') }}{{ event.style.cssClass ? ' ' ~ event.style.cssClass }}"
+    class="cal-event{{ item.allDay ? ' cal-event--all-day' : ' cal-event--timed' }}{{ item.busy ? ' cal-event--busy' }}{{ movable ? ' cal-event--movable' }}{{ clickable ? ' cal-event--clickable' }}{{ extra_class|default('') }}{{ event.style.cssClass ? ' ' ~ event.style.cssClass }}"
     style="{{ color ? '--cal-event-color: ' ~ color ~ ';' }}{{ extra_style|default('') }}"
     data-cal-event="{{ item.key }}"
+    {%- if movable or resizable or clickable or deletable %}
+    data-cal-source="{{ item.source }}"
+    data-cal-id="{{ event.id }}"
+    {%- if event.version is not null %} data-cal-version="{{ event.version }}"{% endif %}
+    data-cal-start="{{ item.start.format(wall) }}"
+    data-cal-end="{{ item.end.format(wall) }}"
+    {%- if item.allDay %} data-cal-all-day{% endif %}
+    {%- if resource_id ?? null %} data-cal-resource="{{ resource_id }}"{% endif %}
+    {%- if movable %} data-cal-movable{% endif %}
+    {%- if clickable %} data-cal-clickable role="button"{% endif %}
+    {%- if deletable %} data-cal-deletable{% endif %}
+    {%- if tag == 'div' %} tabindex="0"{% endif %}
+    {%- endif %}
     title="{{ title }}">
     {%- if (show_time ?? true) and not item.allDay -%}
         <time class="cal-event__time" datetime="{{ item.start.format('c') }}">{{ cal_format(item.start, time_skeleton, locale) }}</time>
     {%- endif -%}
     <span class="cal-event__title">{{ title }}</span>
+    {%- if deletable and tag == 'div' -%}
+        <button type="button" class="cal-event__delete" data-cal-delete aria-label="{{ 'event.delete'|trans({'%title%': title}, domain, locale) }}">&times;</button>
+    {%- endif -%}
+    {%- if resizable -%}
+        <span class="cal-event__resize" data-cal-resize aria-hidden="true"></span>
+    {%- endif -%}
 </{{ tag }}>

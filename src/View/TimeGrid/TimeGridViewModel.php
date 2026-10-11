@@ -25,6 +25,8 @@ final readonly class TimeGridViewModel
         public array $slots,
         public array $windows,
         public float $scrollTo,
+        /** @var array{from: int, to: int} the day window, for the interaction script */
+        public array $axis = ['from' => 0, 'to' => 1440],
     ) {
     }
 }

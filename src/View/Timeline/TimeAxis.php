@@ -140,6 +140,25 @@ final class TimeAxis
     }
 
     /**
+     * The axis for the interaction script: each visible day as [Y-m-d, left,
+     * width] and the window in minutes. The script turns a pointer position
+     * into a wall-clock time with it, the same way {@see position()} maps
+     * times to positions.
+     *
+     * @return array{from: int, to: int, days: list<array{string, float, float}>}
+     */
+    public function describe(): array
+    {
+        $width = ($this->dayEnd - $this->dayStart) / $this->total;
+
+        return [
+            'from' => $this->dayStart,
+            'to' => $this->dayEnd,
+            'days' => array_map(fn(array $segment) => [$segment['date'], $segment['offset'] / $this->total, $width], $this->segments),
+        ];
+    }
+
+    /**
      * The windows as [start ms, end ms, left, width], for the script that
      * moves the "now" line between renders.
      *

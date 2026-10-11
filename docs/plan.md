@@ -279,7 +279,12 @@ Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto
    - colonne per risorsa: risorse sopra, i loro giorni sotto (l'ordine contrario, giorni sopra e risorse sotto, non è implementato); `groupBy` non si applica alla griglia;
    - **orari lavorativi** (`display.businessHours`): solo un aiuto visivo, scuriscono le ore di chiusura nella griglia e nella timeline;
    - il controller Stimulus `cal-timeline` è diventato `cal-now`, con un parametro per l'asse (orizzontale per la timeline, verticale per la griglia).
-4. **Interazione**: selezione, spostamento, ridimensionamento, intenti, gestione dei rifiuti e dei conflitti.
+4. **Interazione** (completata): selezione, spostamento (anche su un'altra risorsa), ridimensionamento, click e cancellazione, nella vista mese, nella riga "tutto il giorno", nella griglia oraria e nella timeline.
+   - gli intenti e l'`IntentHandlerInterface` sono come da piano (sezione 5); `IntentDispatcher` scarta prima dell'handler ciò che il calendario può già sapere: evento non più a schermo, interazione non abilitata, versione cambiata, fine prima dell'inizio;
+   - il controller `cal-interact` legge solo la geometria generata dal server (`data-cal-track`, `data-cal-axis`) e calcola orari "da orologio da parete" nel fuso di visualizzazione, come il layout PHP;
+   - l'anteprima del trascinamento viene tolta all'arrivo della risposta: LiveComponent conserva le modifiche fatte dagli script tra un rendering e l'altro;
+   - gli argomenti delle azioni Live sono tutti stringhe (il cast dei booleani tra JSON e `LiveArg` non è affidabile);
+   - limiti noti: gli eventi dentro un popover "+N altri" non si trascinano; spostamento e ridimensionamento da tastiera sono rimandati all'accessibilità della fase 5.
 5. **Completamento**: vista anno con densità, configuratore UI (dipende dal nucleo di setting-bundle), temi, accessibilità, i18n.
 6. **Extra**: bridge API Platform. L'applicazione demo esiste già (calendar-demo) e cresce insieme alle fasi.
 

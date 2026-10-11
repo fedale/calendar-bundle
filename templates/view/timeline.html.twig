@@ -10,7 +10,8 @@
      data-controller="cal-now"
      data-cal-now-windows-value="{{ model.windows|json_encode }}"
      data-cal-now-scroll-value="{{ model.scrollTo }}"
-     data-cal-now-axis-value="x">
+     data-cal-now-axis-value="x"
+     data-cal-axis="{{ model.axis|json_encode }}">
     <div class="cal-timeline__scroller" data-cal-now-target="scroller">
         <div class="cal-tl-head">
             <div class="cal-tl-area cal-tl-area--head">
@@ -85,7 +86,7 @@
                             {% endfor %}
                         {% endif %}
                     </div>
-                    <div class="cal-tl-track">
+                    <div class="cal-tl-track"{% if row.resource %} data-cal-track="x" data-cal-resource="{{ row.resource.id }}"{% endif %}>
                         {% for band in row.bands %}
                             {% set color = cal_color(band.item.event.style.color) %}
                             <div class="cal-band cal-tl-band" style="--cal-left: {{ cal_pct(band.left) }}; --cal-width: {{ cal_pct(band.width) }};{{ color ? ' --cal-event-color: ' ~ color ~ ';' }}" title="{{ band.item.title }}"></div>
@@ -94,6 +95,8 @@
                             {{ include('@FedaleCalendar/view/_event.html.twig', {
                                 item: segment.item,
                                 show_time: false,
+                                resizable_here: not segment.continuesAfter,
+                                resource_id: row.resource.id,
                                 extra_class: ' cal-event--bar cal-tl-event' ~ (segment.continuesBefore ? ' cal-event--continues-before') ~ (segment.continuesAfter ? ' cal-event--continues-after'),
                                 extra_style: ' --cal-left: ' ~ cal_pct(segment.left) ~ '; --cal-width: ' ~ cal_pct(segment.width) ~ '; --cal-lane: ' ~ segment.lane ~ ';',
                             }) }}
@@ -108,7 +111,7 @@
                                 <h3 class="cal-popover__title">{{ row.label }}</h3>
                                 <ul class="cal-popover__list">
                                     {% for item in chip.items %}
-                                        <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item}) }}</li>
+                                        <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item, interactive: false}) }}</li>
                                     {% endfor %}
                                 </ul>
                             </div>

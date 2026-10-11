@@ -50,6 +50,7 @@ hands it.
 | `src/Attribute/` | `#[AsCalendar]`, `#[AsCalendarSource]`, `#[AsCalendarView]`: they carry the id/key/name the registries index by |
 | `src/Definition/` | `AbstractCalendar`, `CalendarRegistry` |
 | `src/Options/` | `CalendarOptions` (**the** list of accepted keys, with defaults and validation), `OptionsMerger`, `CalendarOptionsResolver` (precedence), and the value objects it builds: `ViewVariant`, `ViewRange`, `ToolbarButton`, `ResourceColumn`, `BusinessHours` |
+| `src/Intent/` | The write side: intents (`SelectRange`, `MoveEvent`, ...), `IntentResult` and `Rejection`, and `IntentDispatcher` (the calendar's own checks, then the source's handler) |
 | `src/Source/` | `SourceRegistry`, `EventCollector` (fetch, filter, convert, sort), `ResourceCollector`, `CalendarItem` (an event as the views see it) |
 | `src/View/` | One class per view type (`MonthView`, `ListView`, `TimelineView`, `TimeGridView`), `ViewContext`, `ViewRegistry`, and helpers shared by views: `ResourceTree` (sorting and nesting), `WindowParams` (slot and day-window parameters) |
 | `src/View/Layout/` | The month's row layout (`WeekRowLayout`) |
@@ -61,7 +62,7 @@ hands it.
 | `templates/components/` | The component shell (toolbar + active view) |
 | `templates/view/` | One template per view, plus `_event.html.twig` |
 | `assets/styles/calendar.css` | The stylesheet, exposed to AssetMapper as `@fedale/calendar-bundle` |
-| `assets/controllers/` | Stimulus controllers (`cal-now`, `cal-button`), declared in `assets/package.json` |
+| `assets/controllers/` | Stimulus controllers (`cal-interact`, `cal-now`, `cal-button`), declared in `assets/package.json` |
 | `translations/` | `CalendarBundle.{en,it}.yaml`, the system domain |
 | `config/services.yaml` | Service wiring |
 | `tests/Integration/` | A minimal kernel (`TestKernel`) and fixtures to render the real component |
@@ -90,6 +91,15 @@ hands it.
   a re-render is a `LiveProp`; a bad value from the URL falls back to a default instead of throwing.
 - **Timeline positions are fractions of the axis**, rendered as percentages with `cal_pct()`.
   Inside a day the axis uses wall-clock minutes, so hour columns keep their width on DST days.
+- **The calendar never writes.** Gestures become intents; `IntentDispatcher` filters what the
+  calendar can tell (event on screen, interaction enabled, version current), then the source's
+  `IntentHandlerInterface` decides. Whatever the answer, the component re-renders from the sources.
+- **The interaction script only reads server-rendered geometry.** Tracks (`data-cal-track`) and the
+  view's `data-cal-axis` describe how positions map to wall-clock times, mirroring the PHP layout;
+  events carry their source, id, version and wall-clock times. The script must not hold any other
+  model of the calendar.
+- **Undo the drag preview after the action.** Live Components keep changes made by scripts across
+  re-renders, so the preview (transform, size, selection box) is removed once the answer arrives.
 - **Source-provided values that land in a `style` attribute go through `cal_color()`** (or an
   equivalent whitelist). HTML escaping does not stop CSS injection there.
 

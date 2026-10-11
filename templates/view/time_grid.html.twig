@@ -10,7 +10,8 @@
      data-controller="cal-now"
      data-cal-now-windows-value="{{ model.windows|json_encode }}"
      data-cal-now-scroll-value="{{ model.scrollTo }}"
-     data-cal-now-axis-value="y">
+     data-cal-now-axis-value="y"
+     data-cal-axis="{{ model.axis|json_encode }}">
     <div class="cal-tg__scroller" data-cal-now-target="scroller">
         <div class="cal-tg__head">
             {% if model.resourceHeaders is not empty %}
@@ -35,10 +36,13 @@
             {% if model.allDay %}
                 <div class="cal-tg__row cal-tg__all-day">
                     <div class="cal-tg__gutter cal-tg__all-day-label">{{ 'time_grid.all_day'|trans({}, domain, locale) }}</div>
-                    <div class="cal-tg__all-day-content" style="--cal-more-row: {{ model.allDay.laneCount + 1 }};">
+                    <div class="cal-tg__all-day-content" style="--cal-more-row: {{ model.allDay.laneCount + 1 }};"
+                         data-cal-track="columns" data-cal-columns="{{ model.columns|map(column => [column.day.format('Y-m-d'), column.resource ? column.resource.id : null])|json_encode }}">
                         {% for segment in model.allDay.segments %}
                             {{ include('@FedaleCalendar/view/_event.html.twig', {
                                 item: segment.item,
+                                resizable_here: not segment.continuesAfter,
+                                resource_id: model.columns[segment.start].resource.id ?? null,
                                 extra_class: ' cal-event--bar' ~ (segment.continuesBefore ? ' cal-event--continues-before') ~ (segment.continuesAfter ? ' cal-event--continues-after'),
                                 extra_style: ' --cal-start: ' ~ (segment.start + 1) ~ '; --cal-span: ' ~ segment.span ~ '; --cal-row: ' ~ (segment.lane + 1) ~ ';',
                             }) }}
@@ -52,7 +56,7 @@
                                 <h3 class="cal-popover__title">{{ cal_format(model.columns[column].day, 'EEEEdMMMM', locale) }}</h3>
                                 <ul class="cal-popover__list">
                                     {% for item in model.allDayItems[column] ?? hidden %}
-                                        <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item}) }}</li>
+                                        <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item, interactive: false}) }}</li>
                                     {% endfor %}
                                 </ul>
                             </div>
@@ -71,7 +75,8 @@
                 {% endfor %}
             </div>
             {% for column in model.columns %}
-                <div class="cal-tg__col{{ column.isToday ? ' cal-tg__col--today' }}{{ column.isWeekend ? ' cal-tg__col--weekend' }}">
+                <div class="cal-tg__col{{ column.isToday ? ' cal-tg__col--today' }}{{ column.isWeekend ? ' cal-tg__col--weekend' }}"
+                     data-cal-track="y" data-cal-date="{{ column.day.format('Y-m-d') }}"{% if column.resource %} data-cal-resource="{{ column.resource.id }}"{% endif %}>
                     {% for closed in column.closed %}
                         <div class="cal-nonbusiness cal-tg-band" style="--cal-top: {{ cal_pct(closed[0]) }}; --cal-height: {{ cal_pct(closed[1]) }};"></div>
                     {% endfor %}
@@ -83,6 +88,8 @@
                         {{ include('@FedaleCalendar/view/_event.html.twig', {
                             item: event.item,
                             show_time: not event.continuesBefore,
+                            resizable_here: not event.continuesAfter,
+                            resource_id: column.resource.id ?? null,
                             extra_class: ' cal-event--bar cal-tg-event' ~ (event.continuesBefore ? ' cal-event--continues-before') ~ (event.continuesAfter ? ' cal-event--continues-after'),
                             extra_style: ' --cal-top: ' ~ cal_pct(event.top) ~ '; --cal-height: ' ~ cal_pct(event.height) ~ '; --cal-left: ' ~ cal_pct(event.left) ~ '; --cal-width: ' ~ cal_pct(event.width) ~ ';',
                         }) }}

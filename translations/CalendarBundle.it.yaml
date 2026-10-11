@@ -23,6 +23,8 @@ view:
     resources: Risorse
 event:
     busy: Occupato
+    delete: 'Elimina %title%'
+    confirm_delete: 'Eliminare questo evento?'
 month:
     week: Settimana
     more: '+%count% altri'
@@ -40,3 +42,9 @@ timeline:
     expand: 'Espandi %name%'
 time_grid:
     all_day: 'Tutto il giorno'
+intent:
+    not_allowed: 'Questa azione non è consentita.'
+    read_only: 'Questo calendario non si può modificare.'
+    gone: 'Questo evento non esiste più. Il calendario mostra lo stato attuale.'
+    stale: 'Questo evento è stato modificato nel frattempo. Il calendario mostra lo stato attuale: riprova.'
+    invalid: 'L''orario richiesto non è valido.'

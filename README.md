@@ -13,8 +13,8 @@ rules and the data, and hands the calendar a read-only view of them.
   `EventSourceInterface`). There is no universal `Appointment` entity to adopt.
 - **CSS-framework agnostic.** Its own `cal-*` classes, styled through `--cal-*` custom properties.
 
-> **Status:** early development (0.1). The views are in place; interaction (selecting, moving,
-> resizing events) is next. The roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
+> **Status:** early development (0.1). Views and interaction (selecting, moving, resizing,
+> deleting) are in place. The roadmap is in [`docs/plan.md`](docs/plan.md) (in Italian).
 
 ---
 
@@ -74,15 +74,16 @@ import '@fedale/calendar-bundle/styles/calendar.css';
 Alternatively, link it from your layout:
 `<link rel="stylesheet" href="{{ asset('@fedale/calendar-bundle/styles/calendar.css') }}">`.
 
-The bundle ships two small Stimulus controllers: `cal-now` (scrolls the timeline and the time grid
-to "now" and keeps the "now" line moving) and `cal-button` (custom toolbar buttons that dispatch a
-DOM event).
+The bundle ships three Stimulus controllers: `cal-interact` (drag, resize, select, click and delete,
+see "Interaction"), `cal-now` (scrolls the timeline and the time grid to "now" and keeps the "now"
+line moving) and `cal-button` (custom toolbar buttons that dispatch a DOM event).
 Flex registers them in `assets/controllers.json`; without Flex, add them yourself:
 
 ```json
 {
     "controllers": {
         "@fedale/calendar-bundle": {
+            "interact": { "enabled": true, "fetch": "eager" },
             "now": { "enabled": true, "fetch": "lazy" },
             "button": { "enabled": true, "fetch": "lazy" }
         }
@@ -90,8 +91,8 @@ Flex registers them in `assets/controllers.json`; without Flex, add them yoursel
 }
 ```
 
-The calendar works without them: the timeline and the time grid then open at their start, and the
-"now" line stays where the server put it.
+Without them the calendar still renders and navigates: the timeline and the time grid open at
+their start, the "now" line stays where the server put it, and events cannot be dragged.
 
 ## Your first calendar
 
@@ -275,6 +276,11 @@ Options form a tree. The bundle defaults, with every accepted key:
             'width' => '16rem',
             'rowMaxEvents' => 3,        // lanes per row; the rest goes into "+N more"; null = unlimited
         ],
+    ],
+    'behavior' => [                     // see "Interaction"
+        'selectable' => false,          // drag over empty time to select a range
+        'selectSource' => null,         // whose handler gets selections; null = the first that has one
+        'snapMinutes' => 15,            // step of drags and selections on a time axis
     ],
     'integration' => [
         'sources' => [],                // keys of #[AsCalendarSource] services
@@ -468,6 +474,81 @@ document.addEventListener('rooms:add', (event) => {
     openBookingForm(event.detail.date);
 });
 ```
+
+---
+
+## Interaction
+
+Users drag events to move them (also to another resource row or column), drag their end to resize
+them, drag over empty time to select a range, click clickable events, and press Delete on
+deletable ones. The calendar does none of it itself: it turns each gesture into an **intent** and
+hands it to the source, where your domain decides.
+
+1. The source enables what each event allows, through `CalendarEvent::$interactions`
+   (`movable`, `resizable`, `clickable`, `deletable`), typically from the user's permissions and
+   your rules. Nothing is enabled by default.
+2. The source implements `IntentHandlerInterface`. A source without it is read-only.
+3. For selections, set `behavior.selectable` to `true`.
+
+```php
+#[AsCalendarSource('rooms')]
+final class RoomSource implements EventSourceInterface, ResourceSourceInterface, IntentHandlerInterface
+{
+    public function handle(CalendarIntent $intent): IntentResult
+    {
+        if ($intent instanceof MoveEvent) {
+            $booking = $this->bookings->find($intent->eventId);
+            if ($booking->getVersion() !== (int) $intent->version) {
+                return IntentResult::rejected(Rejection::Conflict, 'This booking was changed meanwhile.');
+            }
+            if ($this->bookings->overlaps($intent->toResourceId, $intent->start, $intent->end, except: $booking)) {
+                return IntentResult::rejected(Rejection::Validation, 'The room is already booked at that time.');
+            }
+            $booking->move($intent->toResourceId, $intent->start, $intent->end);
+            $this->bookings->save($booking);
+
+            return IntentResult::accepted('Booking moved.');
+        }
+        if ($intent instanceof SelectRange) {
+            // Let your own form create the booking, in a Turbo Frame (e.g. a modal).
+            return IntentResult::openUrl('/bookings/new?'.http_build_query([
+                'room' => $intent->resourceId,
+                'start' => $intent->start->format(\DATE_ATOM),
+                'end' => $intent->end->format(\DATE_ATOM),
+            ]), 'booking-modal');
+        }
+
+        return IntentResult::rejected(Rejection::Forbidden, 'Not supported.');
+    }
+}
+```
+
+| Intent | Sent when | Carries |
+|---|---|---|
+| `SelectRange` | dragging over empty time | `start`, `end` (exclusive), `allDay`, `resourceId` |
+| `MoveEvent` | dropping a dragged event | `source`, `eventId`, `version`, new `start` and `end` (duration kept), `fromResourceId`, `toResourceId` |
+| `ResizeEvent` | dropping a dragged event end | `source`, `eventId`, `version`, `start`, new `end` |
+| `ClickEvent` | clicking (or Enter on) a clickable event without a url | `source`, `eventId`, `version` |
+| `DeleteEvent` | the × button, or Delete on a focused event | `source`, `eventId`, `version` |
+
+Every intent also carries the `calendar` id. Times are `DateTimeImmutable` in the display timezone,
+snapped to `behavior.snapMinutes` on a time axis and to whole days elsewhere.
+
+The handler answers with an `IntentResult`: `accepted()`, `rejected()` (with a `Rejection`:
+`Conflict`, `Validation` or `Forbidden`) or `openUrl()`. Messages are translation keys or plain
+text, shown above the view (`role="status"`, or `role="alert"` for rejections). **Whatever the
+answer, the calendar re-renders from the sources**: an accepted move shows the event at its new
+place, a rejected one back where it was. There is no client-side undo to get wrong.
+
+Before calling the handler, the calendar rejects what it can tell on its own: an event that is not
+on screen any more, an interaction the event does not enable, a version that changed since the page
+was rendered, an end before the start. These checks stop stale or forged requests early; they do
+not replace your domain's own checks, which are the authority.
+
+In the browser, the `cal-interact` controller dispatches a cancelable `cal:intent` DOM event
+before each call, with the action and its arguments as detail: call `preventDefault()` to stop it
+(for example, to ask for confirmation first). An `openUrl()` answer arrives as a `cal:open` event,
+which the controller handles by loading the URL into the named Turbo Frame, or visiting it.
 
 ### Adding a view
 

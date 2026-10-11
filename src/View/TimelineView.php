@@ -194,6 +194,7 @@ final class TimelineView implements CalendarViewInterface
             now: $now,
             windows: $axis->windows(),
             scrollTo: $scrollTo,
+            axis: $axis->describe(),
         );
     }
 

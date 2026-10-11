@@ -23,6 +23,7 @@ services:
 
     Fedale\CalendarBundle\Source\EventCollector: ~
     Fedale\CalendarBundle\Source\ResourceCollector: ~
+    Fedale\CalendarBundle\Intent\IntentDispatcher: ~
     Fedale\CalendarBundle\Time\DateFormatter: ~
 
     Fedale\CalendarBundle\Time\DefaultTimezoneResolver: ~

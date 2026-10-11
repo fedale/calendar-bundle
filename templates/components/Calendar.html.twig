@@ -3,7 +3,13 @@
 {% set domain = 'CalendarBundle' %}
 {% set locale = this.context.locale %}
 {% set label = this.label %}
-{% set root_attributes = {class: 'cal cal--view-' ~ this.options.variant(this.activeView).type} %}
+{% set root_attributes = {
+    class: 'cal cal--view-' ~ this.options.variant(this.activeView).type,
+    'data-controller': 'cal-interact',
+    'data-cal-interact-snap-value': this.snapMinutes,
+    'data-cal-interact-selectable-value': this.options.selectable ? 'true' : 'false',
+    'data-cal-interact-confirm-delete-value': 'event.confirm_delete'|trans({}, domain, locale),
+} %}
 {% if label %}
     {% set root_attributes = root_attributes|merge({'aria-label': label|trans({}, null, locale)}) %}
 {% endif %}
@@ -57,6 +63,12 @@
             </div>
         {% endfor %}
     </header>
+
+    {% if this.result and this.result.message %}
+        <div class="cal-notice cal-notice--{{ this.result.accepted ? 'success' : this.result.rejection.value }}" role="{{ this.result.accepted ? 'status' : 'alert' }}">
+            {{- this.result.message|trans(this.result.parameters, this.result.translationDomain, locale) -}}
+        </div>
+    {% endif %}
 
     <div class="cal-body">
         {{ include(this.viewTemplate, {model: this.model, calendar: this, locale: locale}) }}

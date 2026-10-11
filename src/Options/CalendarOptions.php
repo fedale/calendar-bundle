@@ -76,6 +76,15 @@ final readonly class CalendarOptions
                 'rowMaxEvents' => 3,
             ],
         ],
+        'behavior' => [
+            // Dragging over empty time selects a range and sends a SelectRange intent.
+            'selectable' => false,
+            // The source whose handler receives selections; null = the first
+            // source of the calendar that implements IntentHandlerInterface.
+            'selectSource' => null,
+            // Step of drags and selections on a time axis, in minutes.
+            'snapMinutes' => 15,
+        ],
         'integration' => [
             'sources' => [],
         ],
@@ -118,6 +127,9 @@ final readonly class CalendarOptions
         public ?string $resourceGroupBy,
         public string $resourceAreaWidth,
         public ?int $rowMaxEvents,
+        public bool $selectable,
+        public ?string $selectSource,
+        public int $snapMinutes,
         public array $sources,
         public array $tree,
     ) {
@@ -194,6 +206,20 @@ final readonly class CalendarOptions
             throw new \InvalidArgumentException('Calendar option "display.resources.groupBy" must be a field name or null.');
         }
 
+        $behavior = $tree['behavior'];
+        $selectSource = $behavior['selectSource'];
+        if ($selectSource !== null && (!\is_string($selectSource) || $selectSource === '')) {
+            throw new \InvalidArgumentException('Calendar option "behavior.selectSource" must be a source key or null.');
+        }
+        $sources = self::stringList($tree['integration']['sources'], 'integration.sources');
+        if ($selectSource !== null && !\in_array($selectSource, $sources, true)) {
+            throw new \InvalidArgumentException(sprintf('Calendar option "behavior.selectSource" must be one of the calendar\'s sources (%s).', implode(', ', $sources)));
+        }
+        $snap = $behavior['snapMinutes'];
+        if (!\is_int($snap) || $snap < 1 || 1440 % $snap !== 0) {
+            throw new \InvalidArgumentException('Calendar option "behavior.snapMinutes" must divide a day (1440), e.g. 5, 15 or 30.');
+        }
+
         return new self(
             enabledViews: $enabled,
             defaultView: $default,
@@ -214,7 +240,10 @@ final readonly class CalendarOptions
             resourceGroupBy: $groupBy,
             resourceAreaWidth: $width,
             rowMaxEvents: $rowMaxEvents,
-            sources: self::stringList($tree['integration']['sources'], 'integration.sources'),
+            selectable: (bool) $behavior['selectable'],
+            selectSource: $selectSource,
+            snapMinutes: $snap,
+            sources: $sources,
             tree: $tree,
         );
     }

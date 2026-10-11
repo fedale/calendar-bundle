@@ -28,6 +28,8 @@ final readonly class TimelineViewModel
         public ?float $now,
         public array $windows,
         public float $scrollTo,
+        /** @var array{from: int, to: int, days: list<array{string, float, float}>} */
+        public array $axis = ['from' => 0, 'to' => 1440, 'days' => []],
     ) {
     }
 }

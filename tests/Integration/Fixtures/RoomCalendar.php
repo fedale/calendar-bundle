@@ -26,6 +26,7 @@ final class RoomCalendar extends AbstractCalendar
                     'groupBy' => 'building',
                 ],
             ],
+            'behavior' => ['selectable' => true],
             'integration' => ['sources' => ['rooms']],
         ];
     }

@@ -200,6 +200,7 @@ final class TimeGridView implements CalendarViewInterface
             slots: $gutter,
             windows: $windows,
             scrollTo: (float) $scrollTo,
+            axis: ['from' => $dayStart, 'to' => $dayEnd],
         );
     }
 

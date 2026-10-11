@@ -747,6 +747,110 @@ a.cal-event:hover .cal-event__title {
     color: var(--cal-fg);
 }
 
+/* Interaction: dragging, resizing, selecting, and the answer to an intent. */
+
+.cal-event {
+    position: relative;
+}
+
+.cal-event--movable {
+    cursor: grab;
+}
+
+.cal-event--clickable {
+    cursor: pointer;
+}
+
+.cal--dragging,
+.cal--dragging * {
+    cursor: grabbing;
+    user-select: none;
+}
+
+/* The dragged event lets the pointer through, so the drop target is found
+   under it. */
+.cal-event--dragging {
+    z-index: 5;
+    opacity: .85;
+    box-shadow: 0 6px 16px rgb(0 0 0 / .25);
+    pointer-events: none;
+}
+
+.cal-event__resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+}
+
+.cal-tg-event .cal-event__resize {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: 6px;
+    cursor: ns-resize;
+}
+
+.cal-event__delete {
+    display: none;
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    padding: 0 .25rem;
+    border: 0;
+    border-radius: var(--cal-radius);
+    background: rgb(0 0 0 / .25);
+    color: #fff;
+    font: inherit;
+    font-size: .75rem;
+    line-height: 1.1rem;
+    cursor: pointer;
+}
+
+.cal-event:hover > .cal-event__delete,
+.cal-event:focus-within > .cal-event__delete {
+    display: block;
+}
+
+.cal-event:focus-visible {
+    outline: 2px solid var(--cal-accent);
+    outline-offset: 1px;
+}
+
+.cal-selection {
+    position: absolute;
+    z-index: 1;
+    border-radius: var(--cal-radius);
+    background: color-mix(in srgb, var(--cal-accent) 20%, transparent);
+    outline: 1px solid var(--cal-accent);
+    pointer-events: none;
+}
+
+.cal-tg__all-day-content {
+    position: relative;
+}
+
+.cal-notice {
+    margin-bottom: .75rem;
+    padding: .5rem .75rem;
+    border-radius: var(--cal-radius);
+    background: var(--cal-outside-bg);
+    border-left: 4px solid var(--cal-accent);
+    font-size: .9rem;
+}
+
+.cal-notice--success {
+    border-left-color: #16a34a;
+}
+
+.cal-notice--conflict,
+.cal-notice--validation,
+.cal-notice--forbidden {
+    border-left-color: #dc2626;
+}
+
 /* Business hours: the closed part of the day. */
 
 .cal-nonbusiness {

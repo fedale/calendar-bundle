@@ -20,7 +20,7 @@
             {% if model.weekNumbers %}
                 <div class="cal-month__week-number" title="{{ 'month.week'|trans({}, domain, locale) }} {{ week.number }}">{{ week.number }}</div>
             {% endif %}
-            <div class="cal-month__row">
+            <div class="cal-month__row" data-cal-track="columns" data-cal-columns="{{ week.days|map(day => [day.date.format('Y-m-d'), null])|json_encode }}">
                 <div class="cal-month__cells" aria-hidden="true">
                     {% for day in week.days %}
                         <div class="cal-month__cell{{ not day.inMonth ? ' cal-month__cell--outside' }}{{ day.isToday ? ' cal-month__cell--today' }}{{ day.isWeekend ? ' cal-month__cell--weekend' }}" style="--cal-start: {{ day.column + 1 }}"></div>
@@ -44,6 +44,7 @@
                         {{ include('@FedaleCalendar/view/_event.html.twig', {
                             item: segment.item,
                             show_time: not segment.continuesBefore,
+                            resizable_here: not segment.continuesAfter,
                             extra_class: (segment.continuesBefore ? ' cal-event--continues-before') ~ (segment.continuesAfter ? ' cal-event--continues-after') ~ (segment.span > 1 ? ' cal-event--bar'),
                             extra_style: ' --cal-start: ' ~ (segment.start + 1) ~ '; --cal-span: ' ~ segment.span ~ '; --cal-row: ' ~ (segment.lane + 2) ~ ';',
                         }) }}
@@ -60,7 +61,7 @@
                             <h3 class="cal-popover__title">{{ cal_format(day.date, 'EEEEdMMMM', locale) }}</h3>
                             <ul class="cal-popover__list">
                                 {% for item in day.items %}
-                                    <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item}) }}</li>
+                                    <li>{{ include('@FedaleCalendar/view/_event.html.twig', {item: item, interactive: false}) }}</li>
                                 {% endfor %}
                             </ul>
                         </div>
