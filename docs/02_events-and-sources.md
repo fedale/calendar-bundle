@@ -70,7 +70,7 @@ never sees a recurrence rule.
 | `url` | `null` | Makes the event a link |
 | `data` | `[]` | Opaque payload for your own code; the calendar never shows it, the API never exposes it |
 
-An event that ends before it starts is rejected when built.
+An event that does not end after it starts (for all-day events, on a later date) throws when built.
 
 ## CalendarResource
 

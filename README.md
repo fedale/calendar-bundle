@@ -42,6 +42,13 @@ The full documentation is in [`docs/`](docs/index.md):
 A demo application with rooms, people and bookings is at
 [fedale/calendar-demo](https://github.com/fedale/calendar-demo).
 
+## Using an AI coding assistant?
+
+Point it at `vendor/fedale/calendar-bundle/docs/agents.md`: a compact map of what the bundle already
+does and where your code goes, written to stop an assistant building a calendar grid, drag and drop
+or permission checks by hand. Referencing that path from your project's own `AGENTS.md` /
+`CLAUDE.md` is enough.
+
 ## Requirements
 
 - PHP 8.2+ with `ext-intl`

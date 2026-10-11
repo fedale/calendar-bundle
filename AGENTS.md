@@ -26,6 +26,10 @@ The roadmap and the reasoning behind the design are in [`docs/plan.md`](docs/pla
 Read it before adding a view, an option or anything that touches the contract. The user
 documentation is in [`docs/index.md`](docs/index.md); the README only introduces the bundle.
 
+**Building an app that *uses* the bundle rather than changing the bundle?** Read
+[`docs/agents.md`](docs/agents.md) instead: it is the usage primer, and it will keep you from
+putting business rules, permissions or a second calendar model in the wrong place.
+
 **Requirements:** PHP 8.2+ with `ext-intl`, Symfony 6.4 / 7.x / 8.x, Symfony UX 2.20+.
 
 ## Verifying a change
@@ -73,6 +77,7 @@ hands it.
 | `tests/Integration/` | A minimal kernel (`TestKernel`) and fixtures to render the real component |
 | `docs/plan.md` | Architecture plan and roadmap (Italian) |
 | `docs/index.md`, `docs/NN_*.md` | User documentation, one guide per topic; update the guide a change affects |
+| `docs/agents.md` | The usage primer for coding agents in host applications |
 
 ## Invariants
 
@@ -170,7 +175,9 @@ comment describes, update the comment in the same edit.
 ## Documentation
 
 When you change behavior, update the guide in `docs/` that covers it (and `README.md` if the quick
-start changes). Config keys in the docs must match `CalendarOptions::DEFAULTS` exactly. Writing style: American English, second person,
+start changes). When you add or rename a **capability**, also update the capability map in
+[`docs/agents.md`](docs/agents.md): that file is what a coding agent reads before using the bundle,
+and a feature missing from it gets reimplemented by hand in host applications. Config keys in the docs must match `CalendarOptions::DEFAULTS` exactly. Writing style: American English, second person,
 gender-neutral, realistic examples (shifts, bookings, lessons), no `foo`/`bar`.
 
 ## Git

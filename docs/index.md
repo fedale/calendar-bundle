@@ -7,6 +7,9 @@ and the calendar hands back the user's gestures as **intents** for your domain t
 New here? Start with **[Getting started](01_getting-started.md)**, then reach for the guide you
 need. Every page is self-contained.
 
+Working with an AI coding assistant? Point it at **[agents.md](agents.md)** first: a compact
+capability map and the traps that keep it from putting rules or permissions in the wrong place.
+
 ## Guides
 
 ### Core
