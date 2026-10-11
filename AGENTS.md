@@ -23,7 +23,8 @@ It is framework-agnostic on the CSS side: `cal-*` classes, `--cal-*` tokens, no 
 Tailwind anywhere in `src/` or `templates/`.
 
 The roadmap and the reasoning behind the design are in [`docs/plan.md`](docs/plan.md), in Italian.
-Read it before adding a view, an option or anything that touches the contract.
+Read it before adding a view, an option or anything that touches the contract. The user
+documentation is in [`docs/index.md`](docs/index.md); the README only introduces the bundle.
 
 **Requirements:** PHP 8.2+ with `ext-intl`, Symfony 6.4 / 7.x / 8.x, Symfony UX 2.20+.
 
@@ -71,6 +72,7 @@ hands it.
 | `config/services.yaml` | Service wiring |
 | `tests/Integration/` | A minimal kernel (`TestKernel`) and fixtures to render the real component |
 | `docs/plan.md` | Architecture plan and roadmap (Italian) |
+| `docs/index.md`, `docs/NN_*.md` | User documentation, one guide per topic; update the guide a change affects |
 
 ## Invariants
 
@@ -167,8 +169,8 @@ comment describes, update the comment in the same edit.
 
 ## Documentation
 
-When you change behavior, update `README.md`. Config keys in the docs must match
-`CalendarOptions::DEFAULTS` exactly. Writing style: American English, second person,
+When you change behavior, update the guide in `docs/` that covers it (and `README.md` if the quick
+start changes). Config keys in the docs must match `CalendarOptions::DEFAULTS` exactly. Writing style: American English, second person,
 gender-neutral, realistic examples (shifts, bookings, lessons), no `foo`/`bar`.
 
 ## Git
