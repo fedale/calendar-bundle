@@ -317,6 +317,8 @@ Le fasi 2 e 3 sono state invertite dopo la fase 1: la timeline riusa quasi tutto
 
     La griglia oraria, misurata nella fase 3, è leggera: settimana con ~110 eventi 26 ms, 50 colonne-risorsa 24 ms, HTML sotto i 125 KB. Le misure si ripetono con `bin/benchmark` di calendar-demo.
 
+    Con i dati reali di calendar-demo (SQLite via Doctrine, ~7.500 prenotazioni e ~4.900 appuntamenti) i tempi restano dello stesso ordine: giorno 23-34 ms, settimana con 54 sale 58 ms, mese con 54 sale (~3.800 prenotazioni) 178 ms per **2,2 MB** di HTML. È il caso in cui il peso della navigazione Live diventa il limite reale: la paginazione delle risorse o il rendering parziale per riga sono il primo intervento se un'applicazione arriva a questi volumi.
+
     **Decisione: anche la timeline resta un unico LiveComponent**, senza componenti figli per riga. Il punto debole è il peso della navigazione Live nel caso più grande (tutto l'HTML a ogni passo, ~710 KB non compressi). Se servirà, le leve sono la paginazione delle risorse o un rendering parziale per riga; oltre il centinaio di risorse va rimisurato.
 - **View model**: definiti vista per vista, nella fase in cui la vista viene implementata.
 - **Zoom della timeline**: nella fase 2. **Combinazione giorni × risorse** nelle colonne per risorsa: nella fase 3.

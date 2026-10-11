@@ -820,7 +820,10 @@ button.cal-year__day:hover {
 
 /* Interaction: dragging, resizing, selecting, and the answer to an intent. */
 
-.cal-event {
+/* A positioning context for the resize handle and the delete button. Zero
+   specificity: the views that place events absolutely (timeline, time
+   grid) must win, wherever their rules sit in this file. */
+:where(.cal-event) {
     position: relative;
 }
 
